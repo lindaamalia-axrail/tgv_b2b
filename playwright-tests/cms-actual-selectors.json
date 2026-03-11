@@ -1,135 +1,143 @@
 {
-  "navigation": {
-    "hamburgerMenu": ".MuiIconButton-root:has(svg)",
-    "contentManagementButton": "button:has-text('Content Management')",
-    "homepageLink": "link:has-text('Homepage'), a:has-text('Homepage')",
-    "popularSearchLink": "link:has-text('Popular Search'), a:has-text('Popular Search')"
+  "urls": {
+    "homepageCarousel": "https://corpvoucher.fam-stg.click/content-management/homepage/homepage-carousel",
+    "productCategory": "https://corpvoucher.fam-stg.click/content-management/homepage/product-category",
+    "highlights": "https://corpvoucher.fam-stg.click/content-management/homepage/highlights",
+    "popularSearch": "https://corpvoucher.fam-stg.click/content-management/popular-search",
+    "addCarousel": "https://corpvoucher.fam-stg.click/content-management/homepage/homepage-carousel/details?mode=add",
+    "editCarousel": "https://corpvoucher.fam-stg.click/content-management/homepage/homepage-carousel/details?mode=edit&id={id}",
+    "addCategory": "https://corpvoucher.fam-stg.click/content-management/homepage/product-category/details?mode=add",
+    "editCategory": "https://corpvoucher.fam-stg.click/content-management/homepage/product-category/details?mode=edit&id={id}",
+    "addHighlight": "https://corpvoucher.fam-stg.click/content-management/homepage/highlights/details?mode=add",
+    "editHighlight": "https://corpvoucher.fam-stg.click/content-management/homepage/highlights/details?mode=edit&id={id}"
+  },
+  "tabs": {
+    "homepageCarousel": "tab 'HomePage Carousel'",
+    "productCategory": "tab 'Product Category'",
+    "highlights": "tab 'Highlights'"
   },
   "homepageCarousel": {
-    "tabs": {
-      "homepageCarouselTab": "tab:has-text('HomePage Carousel')",
-      "productCategoryTab": "tab:has-text('Product Category')",
-      "highlightsTab": "tab:has-text('Highlights')"
-    },
-    "table": {
-      "table": "grid, [role='grid']",
-      "headers": {
-        "title": "columnheader:has-text('HomePage Carousel Title')",
-        "startDate": "columnheader:has-text('Start Date')",
-        "endDate": "columnheader:has-text('End Date')",
-        "lastUpdate": "columnheader:has-text('Last Update')",
-        "status": "columnheader:has-text('Status')"
+    "listing": {
+      "headers": ["HomePage Carousel Title", "Start Date", "End Date", "Last Update", "Status"],
+      "buttons": {
+        "manageDisplaySequence": "button 'Manage Display Sequence'",
+        "addHomepageCarousel": "button 'Add HomePage Carousel'"
+      },
+      "search": "textbox 'Search Name'",
+      "rowActions": {
+        "statusCheckbox": "checkbox (in status cell - checked=active, unchecked=inactive, disabled=expired)",
+        "editButton": "first button in action cell",
+        "deleteButton": "second button in action cell"
       }
     },
-    "buttons": {
-      "manageDisplaySequence": "button:has-text('Manage Display Sequence')",
-      "add": "button:has-text('Add HomePage Carousel')",
-      "edit": "button:has(img)",
-      "delete": "button:has(img)"
-    },
-    "search": {
-      "searchInput": "textbox[placeholder*='Search' i]"
-    },
     "form": {
-      "fileInput": "input[type='file']",
-      "altTextInput": "textbox",
-      "nameInput": "textbox",
-      "destinationUrlInput": "textbox",
-      "startDateButton": "button:has-text(/\\d{2}\\/\\d{2}\\/\\d{4}/)",
-      "endDateButton": "button:has-text(/\\d{2}\\/\\d{2}\\/\\d{4}/)",
-      "statusCombobox": "combobox",
-      "saveButton": "button:has-text('Save Changes')",
-      "cancelButton": "button:has-text('Cancel')"
-    },
-    "rowActions": {
-      "statusCheckbox": "checkbox",
-      "editButton": "button:has(img)",
-      "deleteButton": "button:has(img)"
+      "title": "Add/Edit HomePage Carousel",
+      "fields": {
+        "uploadImage": "button 'Browse Your File Here' (or input[type='file'])",
+        "altText": "textbox (index 0 - ALT TEXT)",
+        "name": "textbox (index 1 - NAME *)",
+        "destinationUrl": "textbox (index 2 - DESTINATION URL)",
+        "startDate": "button with date format dd/mm/yyyy (START DATE)",
+        "endDate": "button with date format dd/mm/yyyy (END DATE)",
+        "status": "combobox (Enabled/Disabled)"
+      },
+      "buttons": {
+        "cancel": "button 'Cancel'",
+        "saveChanges": "button 'Save Changes'"
+      }
     }
   },
   "productCategory": {
-    "table": {
-      "table": "grid, [role='grid']",
-      "headers": {
-        "categoryName": "columnheader:has-text('Category Name')",
-        "startDate": "columnheader:has-text('Start Date')",
-        "endDate": "columnheader:has-text('End Date')",
-        "lastUpdate": "columnheader:has-text('Last Update')",
-        "status": "columnheader:has-text('Status')"
+    "listing": {
+      "headers": ["Category Name", "Start Date", "End Date", "Last Update", "Status"],
+      "buttons": {
+        "manageDisplaySequence": "button 'Manage Display Sequence'",
+        "addProductCategory": "button 'Add Product Category'"
+      },
+      "search": "textbox 'Search Name'",
+      "rowActions": {
+        "statusCheckbox": "checkbox (checked=active, unchecked=inactive, disabled=expired)",
+        "editButton": "single button in action cell (no delete button)"
       }
     },
-    "buttons": {
-      "manageDisplaySequence": "button:has-text('Manage Display Sequence')",
-      "add": "button:has-text('Add Product Category')"
-    },
-    "search": {
-      "searchInput": "textbox[placeholder*='Search' i]"
-    },
-    "rowActions": {
-      "statusCheckbox": "checkbox",
-      "editButton": "button:has(img)"
+    "form": {
+      "title": "Detail Product Category",
+      "fields": {
+        "name": "textbox (NAME - disabled in edit mode)",
+        "status": "checkbox (checked=active)",
+        "startDate": "button with date format dd/mm/yyyy",
+        "endDate": "button with date format dd/mm/yyyy"
+      },
+      "buttons": {
+        "cancel": "button 'Cancel'",
+        "saveChanges": "button 'Save Changes'"
+      }
     }
   },
   "highlights": {
     "highlightsName": {
-      "input": "textbox",
-      "saveButton": "button:has-text('Save')"
+      "input": "textbox 'Highlight name'",
+      "saveButton": "button 'Save' (next to highlights name)"
     },
-    "table": {
-      "table": "grid, [role='grid']",
-      "headers": {
-        "title": "columnheader:has-text('Highlight Title')",
-        "startDate": "columnheader:has-text('Start Date')",
-        "endDate": "columnheader:has-text('End Date')",
-        "lastUpdate": "columnheader:has-text('Last Update')",
-        "position": "columnheader:has-text('Position')"
+    "listing": {
+      "headers": ["Highlight Title", "Start Date", "End Date", "Last Update", "Position"],
+      "buttons": {
+        "addHighlight": "button 'Add Highlight'"
+      },
+      "search": "textbox 'Search Name'",
+      "rowActions": {
+        "positionCombobox": "combobox (Top, Bottom Left, Bottom Right)",
+        "editButton": "first button in action cell",
+        "deleteButton": "second button in action cell"
       }
     },
-    "buttons": {
-      "add": "button:has-text('Add Highlight')"
-    },
-    "search": {
-      "searchInput": "textbox[placeholder*='Search' i]"
-    },
-    "rowActions": {
-      "positionCombobox": "combobox",
-      "editButton": "button:has(img)",
-      "deleteButton": "button:has(img)"
+    "form": {
+      "title": "Add/Edit Highlight",
+      "fields": {
+        "uploadImage": "button 'Browse Your File Here'",
+        "altText": "textbox (index 0)",
+        "name": "textbox (index 1)",
+        "destinationUrl": "textbox (index 2)",
+        "startDate": "button with date format dd/mm/yyyy",
+        "endDate": "button with date format dd/mm/yyyy",
+        "status": "combobox (Enabled/Disabled)"
+      },
+      "buttons": {
+        "cancel": "button 'Cancel'",
+        "saveChanges": "button 'Save Changes'"
+      }
     }
   },
   "popularSearch": {
-    "table": {
-      "table": "grid, [role='grid']",
-      "headers": {
-        "title": "columnheader:has-text('Title')",
-        "status": "columnheader:has-text('Status')",
-        "lastUpdate": "columnheader:has-text('Last Update')",
-        "actions": "columnheader:has-text('Actions')"
+    "listing": {
+      "headers": ["Title", "Status", "Last Update", "Actions"],
+      "buttons": {
+        "manageDisplaySequence": "button 'Manage Display Sequence'",
+        "add": "button 'Add'"
+      },
+      "search": "textbox 'Search Keyword'",
+      "rowActions": {
+        "inlineEditButton": "button inside title cell (pencil icon next to text)",
+        "statusCheckbox": "checkbox (checked=active, unchecked=inactive)",
+        "deleteButton": "button in Actions cell"
+      },
+      "inlineEdit": {
+        "description": "Clicking edit button turns title paragraph into editable textbox. Press Enter to save."
       }
     },
-    "buttons": {
-      "manageDisplaySequence": "button:has-text('Manage Display Sequence')",
-      "add": "button:has-text('Add')"
-    },
-    "search": {
-      "searchInput": "textbox[placeholder*='Search' i]"
-    },
-    "rowActions": {
-      "editInlineButton": "button:has(img)",
-      "statusCheckbox": "checkbox",
-      "deleteButton": "button:has(img)"
+    "addDialog": {
+      "title": "heading 'Add Popular Search'",
+      "closeButton": "button 'close'",
+      "titleInput": "textbox 'Enter popular search title'",
+      "cancelButton": "button 'Cancel'",
+      "saveButton": "button 'Save'"
     }
   },
-  "common": {
-    "pagination": {
-      "rowsPerPageCombobox": "combobox[aria-label*='Rows per page' i]",
-      "previousButton": "button:has-text('Go to previous page')",
-      "nextButton": "button:has-text('Go to next page')"
-    },
-    "messages": {
-      "success": "text=Success",
-      "error": "text=Error",
-      "required": "text=required"
-    }
+  "loginPage": {
+    "emailInput": "textbox with placeholder '0123456789 / robot@gmail.com'",
+    "passwordInput": "#password",
+    "signInButton": "button 'Sign in'",
+    "forgotPasswordButton": "button 'Forgot password'",
+    "togglePasswordButton": "button 'toggle password visibility'"
   }
 }

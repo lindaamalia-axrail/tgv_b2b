@@ -5,38 +5,33 @@ export class AdminLoginPage {
 
   async navigate() {
     await this.page.goto('https://corpvoucher.fam-stg.click/admin/login');
+    // Wait for loading screen to disappear
+    await this.page.waitForSelector('text=Preparing your experience', { state: 'hidden', timeout: 30000 }).catch(() => {});
   }
 
   async login(email: string, password: string) {
-    // Admin portal uses 'username' field (can be email or phone)
-    await this.page.fill('input[name="username"]', email);
-    await this.page.fill('input[name="password"]', password);
+    // Wait for login form to be ready
+    await this.page.getByRole('textbox', { name: /robot@gmail.com/i }).waitFor({ state: 'visible', timeout: 15000 });
     
-    // Click the Sign in button (not submit button)
+    // Fill email/phone field (placeholder: "0123456789 / robot@gmail.com")
+    await this.page.getByRole('textbox', { name: /robot@gmail.com/i }).fill(email);
+    // Fill password field
+    await this.page.locator('#password').fill(password);
+    
+    // Click the Sign in button
     await this.page.getByRole('button', { name: /sign in/i }).click();
     
-    // Wait a bit for the response
-    await this.page.waitForTimeout(3000);
+    // Wait for navigation away from login
+    await this.page.waitForURL(/.*(?!.*login).*/, { timeout: 15000 }).catch(() => {});
     
-    // Check if there's an error message
-    const errorMessage = await this.page.locator('text=/error|invalid|incorrect/i').textContent().catch(() => null);
-    if (errorMessage) {
-      throw new Error(`Login failed with error: ${errorMessage}`);
-    }
-    
-    // Check if we're still on login page
-    if (this.page.url().includes('login')) {
-      // Take a screenshot for debugging
-      await this.page.screenshot({ path: 'login-failed.png' });
-      throw new Error('Login failed - still on login page after submit');
-    }
-    
+    // Wait for loading screen
+    await this.page.waitForSelector('text=Preparing your experience', { state: 'hidden', timeout: 30000 }).catch(() => {});
     await this.page.waitForLoadState('networkidle');
   }
 
   async verifyLoginSuccess() {
-    // Wait for redirect to dashboard or main page
-    await this.page.waitForURL(/.*(?!login).*/);
+    // Wait for redirect away from login page
+    await expect(this.page).not.toHaveURL(/.*login.*/);
   }
 
   async verifyLoginError(errorMessage: string) {
@@ -44,15 +39,15 @@ export class AdminLoginPage {
   }
 
   async clickForgotPassword() {
-    await this.page.click('a:has-text("Forgot Password")');
+    await this.page.getByRole('button', { name: /forgot password/i }).click();
   }
 
   async resetPassword(email: string) {
-    await this.page.fill('input[name="username"]', email);
-    await this.page.click('button[type="submit"]');
+    await this.page.getByRole('textbox', { name: /robot@gmail.com/i }).fill(email);
+    await this.page.getByRole('button', { name: /sign in|submit/i }).click();
   }
 
   async togglePasswordVisibility() {
-    await this.page.click('button[aria-label="toggle password visibility"]');
+    await this.page.getByRole('button', { name: /toggle password visibility/i }).click();
   }
 }
