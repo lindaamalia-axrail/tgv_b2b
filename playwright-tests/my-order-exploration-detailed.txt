@@ -1,0 +1,51 @@
+=== Login ===
+✓ Logged in
+
+=== My Orders Page ===
+✓ Saved page HTML to my-orders-page.html
+
+--- Searching for Order Cards ---
+Found 8 elements with: div[class*="order"]
+  [0] classes: flex items-center gap-6 border-b border-transparent px-4 justify-between
+  [0] text: AllTo ReceiveCompletedCancelled...
+  [1] classes: border-b-[1px] border-input
+  [1] text: ...
+  [2] classes: flex px-4 h-[52px] items-center justify-between border-t border-t-[2px]
+  [2] text: Connect with us...
+Found 2 elements with: a[href*="order"]
+  [0] classes: flex flex-col items-center px-6 py-2 rounded-3xl font-medium transition-colors flex-1 justify-center border bg-[#FF2333] text-white border-[#FF2333]
+  [0] text: My Order...
+  [1] classes: flex flex-col gap-1 items-center justify-center flex-1
+  [1] text: My Order...
+Found 19 elements with: div[class*="item"]
+  [0] classes: sticky top-0 w-full flex items-center justify-between px-4 py-4 gap-4 bg-black opacity-90 backdrop-blur-md z-50
+  [0] text: CORPORATE VOUCHERLALinda Axrail...
+  [1] classes: flex items-center gap-3
+  [1] text: LALinda Axrail...
+  [2] classes: flex items-center gap-2
+  [2] text: LALinda Axrail...
+
+--- Attempting to click first order ---
+✓ Clicked order and saved detail page HTML
+Current URL: https://corporate-voucher-stg.fam-stg.click/my-orders
+
+--- Searching for Order Detail Elements ---
+
+Searching for orderNumber:
+  ✓ Found with: text=/TGV/
+    Text: Copyright Reserved © 2026 TGV Cinemas Sdn. Bhd.
+    Classes: null
+
+Searching for bookingNumber:
+
+Searching for status:
+
+Searching for viewReceipt:
+
+Searching for timestamp:
+
+--- Testing Search and Filter ---
+✓ Search input found
+  Placeholder: Search by Booking Number, Order Number
+✓ Filter Date button found
+  Found 0 date inputs

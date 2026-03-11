@@ -1,0 +1,135 @@
+{
+  "url": "https://corpvoucher.fam-stg.click/content-management/homepage/homepage-carousel",
+  "pageTitle": "AXRAIL.AI",
+  "elements": {
+    "breadcrumb": {
+      "text": "Content ManagementHomepage",
+      "selector": ".MuiBreadcrumbs-root, [aria-label=\"breadcrumb\"]"
+    },
+    "heading": {
+      "text": null,
+      "selector": "h1, h2, h3"
+    },
+    "tabs": {
+      "texts": [
+        "HomePage Carousel",
+        "Product Category",
+        "Highlights"
+      ],
+      "selector": "[role=\"tab\"], .MuiTab-root",
+      "count": 3
+    },
+    "buttons": [
+      {
+        "text": "Linda Admin",
+        "ariaLabel": null,
+        "className": "text-black flex gap-2 items-center",
+        "type": null
+      },
+      {
+        "text": "HomePage Carousel",
+        "ariaLabel": null,
+        "className": "MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary Mui-selected css-16kp3au",
+        "type": "button"
+      },
+      {
+        "text": "Product Category",
+        "ariaLabel": null,
+        "className": "MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-16kp3au",
+        "type": "button"
+      },
+      {
+        "text": "Highlights",
+        "ariaLabel": null,
+        "className": "MuiButtonBase-root MuiTab-root MuiTab-textColorPrimary css-16kp3au",
+        "type": "button"
+      },
+      {
+        "text": "Manage Display Sequence",
+        "ariaLabel": null,
+        "className": "MuiButtonBase-root MuiButton-root MuiButton-outlined MuiButton-outlinedPrimary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-outlined MuiButton-outlinedPrimary MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation flex items-center gap-1 css-i9ro1m",
+        "type": "button"
+      },
+      {
+        "text": "Add HomePage Carousel",
+        "ariaLabel": null,
+        "className": "MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation css-13rvmdw",
+        "type": "button"
+      },
+      {
+        "text": "",
+        "ariaLabel": "Sort",
+        "className": "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u",
+        "type": "button"
+      },
+      {
+        "text": "",
+        "ariaLabel": "Sort",
+        "className": "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u",
+        "type": "button"
+      },
+      {
+        "text": "",
+        "ariaLabel": "Sort",
+        "className": "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u",
+        "type": "button"
+      },
+      {
+        "text": "",
+        "ariaLabel": "Sort",
+        "className": "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u",
+        "type": "button"
+      },
+      {
+        "text": "",
+        "ariaLabel": "Sort",
+        "className": "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u",
+        "type": "button"
+      },
+      {
+        "text": "",
+        "ariaLabel": "Sort",
+        "className": "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u",
+        "type": "button"
+      },
+      {
+        "text": "",
+        "ariaLabel": "Go to previous page",
+        "className": "MuiButtonBase-root Mui-disabled MuiIconButton-root Mui-disabled MuiIconButton-colorInherit MuiIconButton-sizeMedium css-1deacqj",
+        "type": "button"
+      },
+      {
+        "text": "",
+        "ariaLabel": "Go to next page",
+        "className": "MuiButtonBase-root Mui-disabled MuiIconButton-root Mui-disabled MuiIconButton-colorInherit MuiIconButton-sizeMedium css-1deacqj",
+        "type": "button"
+      }
+    ],
+    "table": {
+      "type": "mui",
+      "selector": "[role=\"table\"], .MuiTable-root",
+      "headerSelector": "[role=\"columnheader\"], .MuiTableCell-head",
+      "headers": [
+        "HomePage Carousel Title",
+        "Start Date",
+        "End Date",
+        "Last Update",
+        "Status",
+        ""
+      ],
+      "rowSelector": "[role=\"row\"]:not(:first-child), .MuiTableRow-root:not(:first-child)",
+      "rowCount": 10
+    },
+    "rowActions": {
+      "editButtons": {
+        "count": 0,
+        "selector": "button:has(svg[data-testid*=\"Edit\"]), button[aria-label*=\"edit\" i]"
+      },
+      "deleteButtons": {
+        "count": 0,
+        "selector": "button:has(svg[data-testid*=\"Delete\"]), button[aria-label*=\"delete\" i]"
+      }
+    }
+  },
+  "pageContent": "\n    \n    Linda AdminOrderReportVoucherHO Code Master ListAlpha Code Master ListCorporate VoucherCategoryCorporate ManagementUsersAll UsersRolesAudit LogContent ManagementHomepagePopular SearchSettingsSocial MediaContent ManagementHomepageHomepage  HomePage CarouselProduct CategoryHighlights​ Manage Display SequenceAdd HomePage CarouselHomePage Carousel TitleStart DateEnd DateLast UpdateStatusCorporate selling4 Feb 202631 Jul 202627/02/2026, 10:54 AMBanner 127 Feb 202631 Mar 202625/02/2026, 02:44 PMPapazola Card20 Jan 202630 Apr 202627/02/2026, 11:36 AMtest audit log25 Nov 202527 Nov 202527/02/2026, 09:28 AMAir Freshener21 Nov 202531 Jan 202625/02/2026, 02:34 PMtest again11 Nov 202530 Nov 202530/11/2025, 11:00 PMTGV MAYBANK AMEX PROMO10 Nov 202530 Nov 202527/02/2026, 11:59 AMTest Banner 25 Nov 202530 Nov 202527/02/2026, 11:34 AMTest5 Nov 202530 Nov 202501/12/2025, 11:00 PMtest30 Oct 202519 Nov 202521/11/2025, 11:12 AMRows per page:101–10 of 10Loading\n    \n    \n  \n\nLogout"
+}

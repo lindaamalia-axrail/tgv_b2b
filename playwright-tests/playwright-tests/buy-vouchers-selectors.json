@@ -1,0 +1,39 @@
+{
+  "testScenarios": {
+    "TC018": {
+      "voucherCard": "a[href*=\"/products/\"]",
+      "buyNowBtn": "button:has-text(\"Buy Now\")",
+      "checkoutUrl": "https://corporate-voucher-stg.fam-stg.click/checkout?cartType=buynow&productSeoUrl=voucher-image",
+      "proceedBtn": "button:has-text(\"Proceed to Payment\")"
+    },
+    "TC019": {
+      "addToCartBtn": "button:has-text(\"Add to Cart\")",
+      "successMsg": "text=/added.*cart/i",
+      "cartLink": "a[href*=\"cart\"]",
+      "cartItem": null,
+      "checkoutBtn": "button:has-text(\"Checkout\")",
+      "quantityControls": {
+        "increase": null,
+        "decrease": null,
+        "value": "input[type=\"number\"]"
+      },
+      "removeBtn": null,
+      "checkbox": "[role=\"checkbox\"]"
+    },
+    "TC029": {
+      "title": "h1",
+      "image": "img[alt*=\"voucher\" i]",
+      "price": "text=/RM\\s*\\d+/",
+      "description": "p",
+      "quantitySelector": "input[type=\"number\"]"
+    },
+    "TC025": {
+      "outOfStockIndicator": "text=/Restock Soon/i",
+      "remindMeBtn": "button:has-text(\"Remind Me\")"
+    },
+    "TC028": {
+      "orderItem": null,
+      "viewReceiptBtn": null
+    }
+  }
+}

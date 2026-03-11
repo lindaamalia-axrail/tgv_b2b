@@ -1,0 +1,68 @@
+{
+  "home": {
+    "url": "https://corporate-voucher-stg.fam-stg.click/",
+    "voucherLinks": [
+      {
+        "text": "Voucher ImageRM 170.00",
+        "href": "/products/voucher-image",
+        "className": "flex flex-col gap-[6px] w-[170px] flex-shrink-0 border-2 border-red-600 rounded-md overflow-hidden"
+      },
+      {
+        "text": "TGV Voucher 1RM 105.00",
+        "href": "/products/tgv-voucher-1",
+        "className": "flex flex-col gap-[6px] w-[170px] flex-shrink-0 border-2 border-red-600 rounded-md overflow-hidden"
+      },
+      {
+        "text": "TGV Voucher Mid ValleyRM 85.00",
+        "href": "/products/tgv-voucher-mid-valley",
+        "className": "flex flex-col gap-[6px] w-[170px] flex-shrink-0 border-2 border-red-600 rounded-md overflow-hidden"
+      },
+      {
+        "text": "TGV Voucher BoboiboyRM 10.00",
+        "href": "/products/tgv-voucher-boboiboy",
+        "className": "flex flex-col gap-[6px] w-[170px] flex-shrink-0 border-2 border-red-600 rounded-md overflow-hidden"
+      },
+      {
+        "text": "Restock Soontest aisya editRM 20.00",
+        "href": "/products/test-aisya-edit",
+        "className": "flex flex-col gap-[6px] w-[170px] flex-shrink-0 border-2 border-red-600 rounded-md overflow-hidden"
+      }
+    ],
+    "voucherSelector": "a[href*=\"/products/voucher-image\"]"
+  },
+  "buyVoucher": {
+    "url": "https://corporate-voucher-stg.fam-stg.click/buy",
+    "voucherLinks": [],
+    "voucherCardSelector": null
+  },
+  "cart": {
+    "url": "https://corporate-voucher-stg.fam-stg.click/cart",
+    "pageText": "<iframe src=\"https://www.googletagmanager.com/ns.html?id=GTM-M2NJPLQK\" height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\"></iframe>CORPORATE VOUCHERBuy VoucherSend VoucherMy OrderInventoryLALinda AxrailBackMy CartGet QuotationYour cart is emptyLet's find your favorites and add them hereContinue Shopping(self.__next_f=self.__next_f||[]).push([0])self.__next_f.push([1,\"1:\\\"$Sreact.fragment\\\"\\n2:I[41402,[\\\"6700\\\",\\\"static/chunks/6700-d30cb963ab414f9a.js\\\",\\\"5400\\\",\\\"static/chunks/5400-ca5b"
+  },
+  "myOrder": {
+    "url": "https://corporate-voucher-stg.fam-stg.click/my-orders",
+    "hasTable": false,
+    "hasMuiTable": false,
+    "tableHeaders": []
+  },
+  "sendVoucher": {
+    "url": "https://corporate-voucher-stg.fam-stg.click/send-voucher",
+    "inputs": [
+      {
+        "tag": "INPUT",
+        "type": "text",
+        "name": null,
+        "id": null,
+        "placeholder": "Search by Batch"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "Filter Date"
+      },
+      {
+        "text": "Download Report"
+      }
+    ]
+  }
+}

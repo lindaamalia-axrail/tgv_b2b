@@ -1,0 +1,27 @@
+{
+  "login": {
+    "emailInput": "input[id=\"email\"]",
+    "passwordInput": "input[id=\"password\"]",
+    "submitButton": "button[type=\"submit\"]",
+    "forgotPasswordLink": "a:has-text(\"Forgot Password\"), a:has-text(\"Forgot\")",
+    "signUpLink": "a:has-text(\"Sign Up\"), a[href*=\"signup\"]"
+  },
+  "signup": {
+    "nameInput": "input[name=\"name\"]",
+    "emailInput": "input[name=\"email\"]",
+    "phoneInput": "input[name=\"phoneNumber\"]",
+    "idNumberInput": "input[name=\"tin\"]",
+    "addressInput": "input[name=\"streetAddress\"]",
+    "postalCodeInput": "input[name=\"postalCode\"]",
+    "passwordInput": "input[name=\"newPassword\"]",
+    "confirmPasswordInput": "input[name=\"confirmPassword\"]",
+    "backButton": "button:has-text(\"Back\")"
+  },
+  "forgotPassword": {},
+  "navigation": {
+    "buyVoucher": "a[href=\"/buy\"]"
+  },
+  "buttons": {},
+  "inputs": {},
+  "errors": {}
+}

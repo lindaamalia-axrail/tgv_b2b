@@ -1,0 +1,22 @@
+{
+  "navigation": {
+    "createButton_0": {
+      "tag": "A",
+      "class": "flex items-center gap-2 px-3 py-1.5 rounded-full border border-red-500 text-red-500 hover:bg-red-500/10 transition-colors",
+      "id": "",
+      "text": "Send Voucher",
+      "type": ""
+    }
+  },
+  "step1_addVouchers": {},
+  "step2_uploadCSV": {},
+  "step3_reviewSend": {},
+  "statusPage": {
+    "batchItem": {
+      "tag": "DIV",
+      "class": "sticky top-0 w-full flex items-center justify-between px-4 py-4 gap-4 bg-black opacity-90 backdrop-blur-md z-50",
+      "id": ""
+    }
+  },
+  "reportPage": {}
+}

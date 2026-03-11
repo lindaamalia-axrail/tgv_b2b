@@ -1,0 +1,97 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - link "TGV eShop" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - heading "TGV eShop" [level=1] [ref=e5]:
+          - img "TGV eShop" [ref=e6]
+      - link "CORPORATE VOUCHER" [ref=e8] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e9]:
+        - link "Buy Voucher" [ref=e10] [cursor=pointer]:
+          - /url: /buy
+          - img [ref=e11]
+          - generic [ref=e13]: Buy Voucher
+        - link "Send Voucher" [ref=e14] [cursor=pointer]:
+          - /url: /send-voucher
+          - img [ref=e15]
+          - generic [ref=e18]: Send Voucher
+        - link "My Order" [ref=e19] [cursor=pointer]:
+          - /url: /my-orders
+          - img [ref=e20]
+          - generic [ref=e23]: My Order
+        - link "Ticket Inventory" [ref=e24] [cursor=pointer]:
+          - /url: /inventory
+          - img "Ticket" [ref=e25]
+          - generic [ref=e26]: Inventory
+      - generic [ref=e27]:
+        - link [ref=e28] [cursor=pointer]:
+          - /url: /search
+          - img
+        - link "Shopping Bag" [ref=e30] [cursor=pointer]:
+          - /url: /cart
+          - img "Shopping Bag" [ref=e31]
+        - generic [ref=e44]:
+          - link "LA" [ref=e45] [cursor=pointer]:
+            - /url: /profile
+            - generic [ref=e46]: LA
+          - link "Linda Axrail" [ref=e47] [cursor=pointer]:
+            - /url: /profile
+    - button "Back" [ref=e34]:
+      - img [ref=e35]
+      - generic [ref=e37]: Back
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - heading "Send Voucher" [level=1] [ref=e41]
+        - paragraph [ref=e42]:
+          - text: Send vouchers to your recipients by uploading their details in a CSV file.
+          - text: Follow the steps below to complete your voucher distribution.
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - heading "How To Send Voucher" [level=3] [ref=e50]
+          - paragraph
+          - generic [ref=e51]:
+            - generic [ref=e52]:
+              - generic [ref=e54]: "1"
+              - generic [ref=e56]:
+                - 'heading "Step 1: Set Up Your Voucher Send" [level=4] [ref=e57]'
+                - paragraph [ref=e58]:
+                  - text: Enter the total number of recipients.
+                  - text: Select up to three (3) voucher types, and specify how many vouchers each recipient will receive.
+            - generic [ref=e59]:
+              - generic [ref=e61]: "2"
+              - generic [ref=e63]:
+                - 'heading "Step 2: Download the Recipient Template" [level=4] [ref=e64]'
+                - paragraph [ref=e65]:
+                  - text: Download the CSV template and fill in your recipients' details.
+                  - text: These details are required to deliver vouchers to recipients’ TGV App Wallet.
+            - generic [ref=e66]:
+              - generic [ref=e68]: "3"
+              - generic [ref=e69]:
+                - 'heading "Step 3: Upload and Send" [level=4] [ref=e70]'
+                - paragraph [ref=e71]:
+                  - text: Upload the completed CSV file to proceed.
+                  - text: Once uploaded, vouchers will be sent based on the information provided.
+        - generic [ref=e72]:
+          - generic [ref=e74]:
+            - generic [ref=e75]:
+              - generic [ref=e76]: Total Number of Recipient
+              - textbox "0" [ref=e77]
+            - generic [ref=e79]:
+              - generic [ref=e80]: Select Voucher
+              - button "+ Select Voucher" [ref=e81] [cursor=pointer]:
+                - generic [ref=e82]: +
+                - text: Select Voucher
+          - generic [ref=e84]:
+            - button "Next" [disabled]
+      - generic [ref=e86]:
+        - generic [ref=e87]:
+          - heading "Select Voucher" [level=3] [ref=e88]
+          - button [ref=e89] [cursor=pointer]:
+            - img
+        - paragraph [ref=e90]: Select vouchers to send (Maximum 3 unique vouchers per batch) - 0/3 selected
+        - generic [ref=e91]:
+          - textbox "Search voucher" [active] [ref=e92]: AUTOMATION TEST
+          - img [ref=e93]
+        - button "Select" [ref=e97] [cursor=pointer]
+  - alert [ref=e43]

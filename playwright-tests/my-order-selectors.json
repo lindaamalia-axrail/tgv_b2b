@@ -1,0 +1,13 @@
+{
+  "buyVouchers": {},
+  "checkout": {},
+  "myOrder": {
+    "orderCard": "div[class*=\"order\"]",
+    "filterDateButton": "button:has-text(\"Filter Date\")",
+    "searchInput": "input[placeholder*=\"Search\"]",
+    "requestInvoiceButton": "button:has-text(\"Request e-invoice\")"
+  },
+  "orderDetail": {},
+  "inventory": {},
+  "receipt": {}
+}

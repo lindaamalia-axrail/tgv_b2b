@@ -1,0 +1,70 @@
+{
+  "baseUrl": "https://corpvoucher.fam-stg.click",
+  "login": {
+    "usernameInput": "input[name=\"username\"]",
+    "passwordInput": "input[name=\"password\"]",
+    "submitButton": "button[type=\"submit\"]"
+  },
+  "allUsersPage": {
+    "url": "/user-listing",
+    "searchInput": "input[placeholder=\"Search\"]",
+    "addUserButton": "button:has-text(\"Add User\")",
+    "addNewButton": "button:has-text(\"Add New\")",
+    "sortButtons": "button[aria-label=\"Sort\"]",
+    "paginationPrevious": "button[aria-label=\"Go to previous page\"]",
+    "paginationNext": "button[aria-label=\"Go to next page\"]",
+    "tabs": {
+      "allUsers": "text=All User",
+      "departmentPosition": "text=Department & Position"
+    },
+    "dataGrid": {
+      "rows": ".MuiDataGrid-row",
+      "cells": ".MuiDataGrid-cell",
+      "actionButtons": ".MuiIconButton-root.css-nm0ua4"
+    }
+  },
+  "rolesPage": {
+    "url": "/role-listing",
+    "addRoleButton": "button:has-text(\"Add Role\")",
+    "searchInput": "input[placeholder=\"Search\"]",
+    "sortButtons": "button[aria-label=\"Sort\"]",
+    "dataGrid": {
+      "rows": ".MuiDataGrid-row",
+      "cells": ".MuiDataGrid-cell",
+      "actionButtons": ".MuiIconButton-root"
+    }
+  },
+  "auditLogPage": {
+    "url": "/audit-log",
+    "filters": {
+      "moduleInput": "input[placeholder=\"Module\"]",
+      "usernameInput": "input[placeholder=\"Username\"]",
+      "timestampButton": "input[type=\"button\"][placeholder=\"Timestamp\"]"
+    },
+    "dataGrid": {
+      "rows": ".MuiDataGrid-row",
+      "cells": ".MuiDataGrid-cell"
+    }
+  },
+  "modal": {
+    "dialog": ".MuiDialog-root, [role=\"dialog\"]",
+    "backdrop": ".MuiBackdrop-root",
+    "closeButton": "button[aria-label=\"close\"], button:has-text(\"Cancel\")",
+    "saveButton": "button:has-text(\"Save\")",
+    "confirmButton": "button:has-text(\"Confirm\"), button:has-text(\"Yes\")"
+  },
+  "form": {
+    "textInput": "input[type=\"text\"]",
+    "emailInput": "input[type=\"email\"]",
+    "passwordInput": "input[type=\"password\"]",
+    "checkbox": "input[type=\"checkbox\"]",
+    "select": "div[role=\"button\"]",
+    "autocomplete": ".MuiAutocomplete-root",
+    "dateInput": "input[type=\"date\"]"
+  },
+  "notifications": {
+    "success": ".MuiAlert-standardSuccess, .MuiSnackbar-root",
+    "error": ".MuiAlert-standardError, .MuiSnackbar-root",
+    "message": ".MuiAlert-message"
+  }
+}

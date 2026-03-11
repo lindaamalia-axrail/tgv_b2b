@@ -1,0 +1,81 @@
+{
+  "navigation": {
+    "myOrderLink": "a[href=\"/my-orders\"]",
+    "buyVoucherLink": "a[href=\"/buy\"]",
+    "inventoryLink": "a[href=\"/inventory\"]",
+    "cartLink": "a[href=\"/cart\"]"
+  },
+  "buyVouchers": {
+    "voucherCard": "div[class*=\"card\"], article",
+    "voucherTitle": "h2, h3, .title",
+    "voucherPrice": "text=/RM/, text=/\\$/",
+    "buyNowButton": "button:has-text(\"Buy\"), button:has-text(\"Add to Cart\")",
+    "voucherImage": "img[alt*=\"voucher\" i], img[alt*=\"ticket\" i]"
+  },
+  "checkout": {
+    "selectedVoucher": "div[class*=\"selected\"], div[class*=\"item\"], div[class*=\"product\"]",
+    "voucherQuantity": "input[type=\"number\"], select[name*=\"quantity\"]",
+    "proceedToPaymentButton": "button:has-text(\"Proceed to Payment\"), button:has-text(\"Checkout\"), button:has-text(\"Pay Now\")",
+    "totalAmount": "text=/Total/, text=/Amount/",
+    "removeButton": "button:has-text(\"Remove\"), button[aria-label*=\"remove\" i]"
+  },
+  "myOrder": {
+    "searchInput": "input[placeholder=\"Search by Booking Number, Order Number\"]",
+    "filterDateButton": "button:has-text(\"Filter Date\")",
+    "requestInvoiceButton": "button:has-text(\"Request e-Invoice\")",
+    "tabs": {
+      "all": "button[role=\"tab\"][id*=\"all\" i], button[role=\"tab\"]:has-text(\"All\")",
+      "toReceive": "button[role=\"tab\"][id*=\"toReceive\" i], button[role=\"tab\"]:has-text(\"To Receive\")",
+      "completed": "button[role=\"tab\"][id*=\"completed\" i], button[role=\"tab\"]:has-text(\"Completed\")",
+      "cancelled": "button[role=\"tab\"][id*=\"cancelled\" i], button[role=\"tab\"]:has-text(\"Cancelled\")"
+    },
+    "orderCard": "div[class*=\"order\"], div[class*=\"card\"]",
+    "orderNumber": "text=/Order.*#/, text=/TGV/, text=/ORD/",
+    "orderStatus": "text=/Processing/, text=/Confirmed/, text=/Completed/, text=/Failed/, text=/Cancelled/",
+    "orderDate": "text=/\\d{4}-\\d{2}-\\d{2}/, text=/\\d{2}\\/\\d{2}\\/\\d{4}/",
+    "noOrdersMessage": "text=/No transactions found/, text=/No orders/",
+    "clearFiltersButton": "button:has-text(\"Clear filters\")"
+  },
+  "orderDetail": {
+    "orderNumber": "text=/Order/, text=/Order Number/, text=/Order #/",
+    "bookingNumber": "text=/Booking/, text=/Booking Number/",
+    "orderStatus": "text=/Status/, div[class*=\"status\"], span[class*=\"status\"]",
+    "orderTimestamp": "text=/\\d{2}:\\d{2}/, text=/\\d{4}-\\d{2}-\\d{2}/, [data-testid=\"order-timestamp\"]",
+    "viewReceiptButton": "button:has-text(\"View Receipt\"), button:has-text(\"Receipt\"), a:has-text(\"Receipt\")",
+    "downloadReportButton": "button:has-text(\"Download Report\"), button:has-text(\"Download\"), button:has-text(\"Report\")",
+    "voucherDetails": "div[class*=\"voucher\"], div[class*=\"item\"]",
+    "totalAmount": "text=/Total/, text=/Amount/",
+    "paymentMethod": "text=/Payment Method/, text=/Card/, text=/Bank/",
+    "backButton": "button:has-text(\"Back\"), a:has-text(\"Back\")"
+  },
+  "inventory": {
+    "voucherItem": "div[class*=\"voucher\"], div[class*=\"item\"], div[class*=\"card\"]",
+    "voucherCode": "text=/Code/, text=/Voucher Code/",
+    "voucherQuantity": "text=/Quantity/, text=/Qty/",
+    "expiryDate": "text=/Expiry/, text=/Expires/, text=/Valid Until/",
+    "voucherStatus": "text=/Active/, text=/Used/, text=/Expired/",
+    "sendButton": "button:has-text(\"Send\"), button:has-text(\"Share\")"
+  },
+  "receipt": {
+    "receiptTitle": "text=/Receipt/, text=/Invoice/, h1, h2",
+    "orderNumber": "text=/Order/, text=/Order Number/",
+    "bookingNumber": "text=/Booking/, text=/Booking Number/",
+    "voucherDetails": "text=/Voucher/, text=/Item/",
+    "expiryDate": "text=/Expiry/, text=/Expires/, text=/Valid Until/",
+    "totalAmount": "text=/Total/, text=/Amount/",
+    "downloadButton": "button:has-text(\"Download\"), a:has-text(\"Download\")",
+    "printButton": "button:has-text(\"Print\")"
+  },
+  "payment": {
+    "paymentGateway": "text=/Payment Gateway/, text=/eGHL/, text=/Payment/",
+    "paymentMethod": "select[name*=\"payment\" i], input[name*=\"payment\" i]",
+    "submitPaymentButton": "button:has-text(\"Pay\"), button:has-text(\"Submit\"), button:has-text(\"Confirm\")",
+    "cancelPaymentButton": "button:has-text(\"Cancel\"), a:has-text(\"Cancel\")"
+  },
+  "dateFilter": {
+    "startDateInput": "input[name=\"startDate\"], input[placeholder*=\"start\" i]",
+    "endDateInput": "input[name=\"endDate\"], input[placeholder*=\"end\" i]",
+    "applyButton": "button:has-text(\"Apply\"), button:has-text(\"Filter\")",
+    "clearButton": "button:has-text(\"Clear\"), button:has-text(\"Reset\")"
+  }
+}

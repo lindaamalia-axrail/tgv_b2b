@@ -1,0 +1,11 @@
+{
+  "sendVouchers": {},
+  "inventory": {
+    "downloadReportButton": "button:has-text(\"Download\")"
+  },
+  "cart": {
+    "itemCard": "[class*=\"cart\"], [class*=\"item\"]",
+    "getQuotationButton": "button:has-text(\"Quotation\")"
+  },
+  "common": {}
+}

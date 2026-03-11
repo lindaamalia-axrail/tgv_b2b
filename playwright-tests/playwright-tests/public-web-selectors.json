@@ -1,0 +1,86 @@
+{
+  "pages": {
+    "homeBeforeLogin": {
+      "url": "https://corporate-voucher-stg.fam-stg.click/",
+      "elements": {
+        "signInLink": "a:has-text(\"Sign In\")",
+        "buyVoucherLink": "a:has-text(\"Buy Voucher\")",
+        "sendVoucherLink": "a:has-text(\"Send Voucher\")",
+        "voucherCards": {
+          "cardSelector": null,
+          "count": 0
+        }
+      }
+    },
+    "login": {
+      "url": "https://corporate-voucher-stg.fam-stg.click/login",
+      "elements": {
+        "emailInput": "input[id=\"email\"]",
+        "passwordInput": "input[id=\"password\"]",
+        "submitButton": "button:has-text(\"Sign In\")",
+        "signUpLink": "a:has-text(\"Sign Up\")"
+      }
+    },
+    "homeAfterLogin": {
+      "url": "https://corporate-voucher-stg.fam-stg.click/",
+      "elements": {
+        "navigation": {
+          "items": [],
+          "selector": "nav a, header a"
+        },
+        "userMenu": null,
+        "buyVoucherLink": "a:has-text(\"Buy Voucher\")",
+        "sendVoucherLink": "a:has-text(\"Send Voucher\")",
+        "myOrderLink": "a:has-text(\"My Order\")",
+        "inventoryLink": "a:has-text(\"Inventory\")",
+        "voucherCards": {
+          "cardSelector": null,
+          "count": 0
+        }
+      }
+    },
+    "buyVoucher": {
+      "url": "https://corporate-voucher-stg.fam-stg.click/buy",
+      "elements": {
+        "searchInput": null,
+        "categoryFilter": null,
+        "voucherCards": {
+          "cardSelector": null,
+          "count": 0
+        },
+        "pagination": null
+      }
+    },
+    "cart": {
+      "url": "https://corporate-voucher-stg.fam-stg.click/cart",
+      "elements": {
+        "cartItems": {
+          "itemSelector": null,
+          "count": 0
+        },
+        "subtotal": null,
+        "total": null,
+        "checkoutBtn": null,
+        "continueShoppingBtn": "button:has-text(\"Continue Shopping\")"
+      }
+    },
+    "myOrder": {
+      "url": "https://corporate-voucher-stg.fam-stg.click/my-orders",
+      "elements": {
+        "orderTable": null,
+        "filterStatus": null,
+        "searchOrder": "input[placeholder*=\"Search\" i]",
+        "viewDetailsBtn": null
+      }
+    },
+    "sendVoucher": {
+      "url": "https://corporate-voucher-stg.fam-stg.click/send-voucher",
+      "elements": {
+        "recipientEmailInput": null,
+        "messageInput": null,
+        "voucherSelect": null,
+        "sendBtn": null
+      }
+    }
+  }
+}

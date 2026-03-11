@@ -1,0 +1,12 @@
+{
+  "sendVouchers": {},
+  "inventory": {
+    "downloadReportButton": "button:has-text(\"Download Report\")"
+  },
+  "cart": {
+    "itemCard": "div[class*=\"cart\"], div[class*=\"item\"]",
+    "getQuotationButton": "button:has-text(\"Get Quotation\")",
+    "errorMessage": ".go3958317564"
+  },
+  "common": {}
+}

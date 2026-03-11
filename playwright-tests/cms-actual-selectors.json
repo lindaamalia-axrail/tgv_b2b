@@ -1,0 +1,135 @@
+{
+  "navigation": {
+    "hamburgerMenu": ".MuiIconButton-root:has(svg)",
+    "contentManagementButton": "button:has-text('Content Management')",
+    "homepageLink": "link:has-text('Homepage'), a:has-text('Homepage')",
+    "popularSearchLink": "link:has-text('Popular Search'), a:has-text('Popular Search')"
+  },
+  "homepageCarousel": {
+    "tabs": {
+      "homepageCarouselTab": "tab:has-text('HomePage Carousel')",
+      "productCategoryTab": "tab:has-text('Product Category')",
+      "highlightsTab": "tab:has-text('Highlights')"
+    },
+    "table": {
+      "table": "grid, [role='grid']",
+      "headers": {
+        "title": "columnheader:has-text('HomePage Carousel Title')",
+        "startDate": "columnheader:has-text('Start Date')",
+        "endDate": "columnheader:has-text('End Date')",
+        "lastUpdate": "columnheader:has-text('Last Update')",
+        "status": "columnheader:has-text('Status')"
+      }
+    },
+    "buttons": {
+      "manageDisplaySequence": "button:has-text('Manage Display Sequence')",
+      "add": "button:has-text('Add HomePage Carousel')",
+      "edit": "button:has(img)",
+      "delete": "button:has(img)"
+    },
+    "search": {
+      "searchInput": "textbox[placeholder*='Search' i]"
+    },
+    "form": {
+      "fileInput": "input[type='file']",
+      "altTextInput": "textbox",
+      "nameInput": "textbox",
+      "destinationUrlInput": "textbox",
+      "startDateButton": "button:has-text(/\\d{2}\\/\\d{2}\\/\\d{4}/)",
+      "endDateButton": "button:has-text(/\\d{2}\\/\\d{2}\\/\\d{4}/)",
+      "statusCombobox": "combobox",
+      "saveButton": "button:has-text('Save Changes')",
+      "cancelButton": "button:has-text('Cancel')"
+    },
+    "rowActions": {
+      "statusCheckbox": "checkbox",
+      "editButton": "button:has(img)",
+      "deleteButton": "button:has(img)"
+    }
+  },
+  "productCategory": {
+    "table": {
+      "table": "grid, [role='grid']",
+      "headers": {
+        "categoryName": "columnheader:has-text('Category Name')",
+        "startDate": "columnheader:has-text('Start Date')",
+        "endDate": "columnheader:has-text('End Date')",
+        "lastUpdate": "columnheader:has-text('Last Update')",
+        "status": "columnheader:has-text('Status')"
+      }
+    },
+    "buttons": {
+      "manageDisplaySequence": "button:has-text('Manage Display Sequence')",
+      "add": "button:has-text('Add Product Category')"
+    },
+    "search": {
+      "searchInput": "textbox[placeholder*='Search' i]"
+    },
+    "rowActions": {
+      "statusCheckbox": "checkbox",
+      "editButton": "button:has(img)"
+    }
+  },
+  "highlights": {
+    "highlightsName": {
+      "input": "textbox",
+      "saveButton": "button:has-text('Save')"
+    },
+    "table": {
+      "table": "grid, [role='grid']",
+      "headers": {
+        "title": "columnheader:has-text('Highlight Title')",
+        "startDate": "columnheader:has-text('Start Date')",
+        "endDate": "columnheader:has-text('End Date')",
+        "lastUpdate": "columnheader:has-text('Last Update')",
+        "position": "columnheader:has-text('Position')"
+      }
+    },
+    "buttons": {
+      "add": "button:has-text('Add Highlight')"
+    },
+    "search": {
+      "searchInput": "textbox[placeholder*='Search' i]"
+    },
+    "rowActions": {
+      "positionCombobox": "combobox",
+      "editButton": "button:has(img)",
+      "deleteButton": "button:has(img)"
+    }
+  },
+  "popularSearch": {
+    "table": {
+      "table": "grid, [role='grid']",
+      "headers": {
+        "title": "columnheader:has-text('Title')",
+        "status": "columnheader:has-text('Status')",
+        "lastUpdate": "columnheader:has-text('Last Update')",
+        "actions": "columnheader:has-text('Actions')"
+      }
+    },
+    "buttons": {
+      "manageDisplaySequence": "button:has-text('Manage Display Sequence')",
+      "add": "button:has-text('Add')"
+    },
+    "search": {
+      "searchInput": "textbox[placeholder*='Search' i]"
+    },
+    "rowActions": {
+      "editInlineButton": "button:has(img)",
+      "statusCheckbox": "checkbox",
+      "deleteButton": "button:has(img)"
+    }
+  },
+  "common": {
+    "pagination": {
+      "rowsPerPageCombobox": "combobox[aria-label*='Rows per page' i]",
+      "previousButton": "button:has-text('Go to previous page')",
+      "nextButton": "button:has-text('Go to next page')"
+    },
+    "messages": {
+      "success": "text=Success",
+      "error": "text=Error",
+      "required": "text=required"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+=== EXPLORING USER MANAGEMENT FORMS ===
+
+✓ Logged in
+
+=== EXPLORING ADD USER FORM ===
+
+Add User modal opened
+✓ Dialog found
+
+--- FORM FIELDS ---
+Text Input 1: label="" | placeholder="Input name" | name="name" | id=":r28:"
+Text Input 2: label="" | placeholder="Choose role" | name="null" | id=":r2b:"
+Text Input 3: label="" | placeholder="Choose department" | name="null" | id=":r2d:"
+Text Input 4: label="" | placeholder="Choose position" | name="null" | id=":r2f:"
+Email Input 1: label="" | placeholder="Input email"
+
+Found 6 autocomplete/select fields
+Autocomplete 1: label="" | placeholder="Choose role"
+Autocomplete 2: label="" | placeholder=""
+Autocomplete 3: label="" | placeholder="Choose department"
+Autocomplete 4: label="" | placeholder=""
+Autocomplete 5: label="" | placeholder="Choose position"
+Autocomplete 6: label="" | placeholder=""
+
+Found 0 checkboxes/switches
+Found 0 date inputs
+
+--- FORM BUTTONS ---
+Button 1: "" | aria-label="close"
+Button 2: "" | aria-label="Choose date"
+Button 3: "" | aria-label="Open"
+Button 4: "" | aria-label="Open"
+Button 5: "" | aria-label="Open"
+Button 6: "Cancel" | aria-label="null"
+Button 7: "Add" | aria-label="null"
+
+✓ Form HTML saved
+✓ Screenshot saved
+
+=== EXPLORING ADD ROLE FORM ===
+
+Add Role modal opened
+
+=== EXPLORING EDIT USER ===
+
+
+=== EXPLORING D&P SECTION ===
+
+
+✓ Log saved
+
+=== FORM EXPLORATION COMPLETE ===

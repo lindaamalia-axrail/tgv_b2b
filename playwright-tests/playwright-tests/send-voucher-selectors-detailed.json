@@ -1,0 +1,72 @@
+{
+  "step1_inputs": [
+    {
+      "type": "email",
+      "name": null,
+      "placeholder": "Enter your email",
+      "id": "email",
+      "className": "w-full bg-[#2A2A2A] text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FF2333] border border-gray-600",
+      "label": "Email Address"
+    },
+    {
+      "type": "password",
+      "name": null,
+      "placeholder": "Enter your password",
+      "id": "password",
+      "className": "w-full bg-[#2A2A2A] text-white rounded-lg px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-[#FF2333] border border-gray-600",
+      "label": "Password"
+    }
+  ],
+  "step1_buttons": [
+    {
+      "text": "",
+      "type": "button",
+      "className": "absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white",
+      "disabled": false
+    },
+    {
+      "text": "Sign In",
+      "type": "submit",
+      "className": "w-full bg-[#FF2333] text-white font-medium py-3 rounded-full hover:bg-[#E01E2B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+      "disabled": false
+    }
+  ],
+  "status_buttons": [
+    {
+      "text": "CORPORATE VOUCHER",
+      "className": null
+    },
+    {
+      "text": "Buy Voucher",
+      "className": "flex items-center gap-2 px-3 py-1.5 rounded-full border border-red-500 text-red-500 hover:bg-red-500/10 transition-colors"
+    },
+    {
+      "text": "Send Voucher",
+      "className": "flex items-center gap-2 px-3 py-1.5 rounded-full border border-red-500 text-red-500 hover:bg-red-500/10 transition-colors"
+    },
+    {
+      "text": "My Order",
+      "className": "flex items-center gap-2 px-3 py-1.5 rounded-full border border-red-500 text-red-500 hover:bg-red-500/10 transition-colors"
+    },
+    {
+      "text": "Inventory",
+      "className": "flex items-center gap-2 px-3 py-1.5 rounded-full border border-red-500 text-red-500 hover:bg-red-500/10 transition-colors"
+    },
+    {
+      "text": "Sign In",
+      "className": "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-[#FFFFFF1A] w-8 h-8 rounded-full"
+    },
+    {
+      "text": "Forgot Password?",
+      "className": "text-[#FF2333] hover:text-[#E01E2B] text-sm underline"
+    },
+    {
+      "text": "Sign In",
+      "className": "w-full bg-[#FF2333] text-white font-medium py-3 rounded-full hover:bg-[#E01E2B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    },
+    {
+      "text": "Sign Up",
+      "className": "text-[#FF2333] hover:text-[#E01E2B] font-medium underline"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "navigation": {},
+  "voucherList": {
+    "voucherCard": "a[href*=\"/products/\"]"
+  },
+  "voucherDetail": {
+    "quantityInput": "input[type=\"number\"]"
+  },
+  "cart": {
+    "cartLink": "a[href*=\"cart\"]",
+    "itemCheckbox": "[role=\"checkbox\"]",
+    "checkoutButton": "button:has-text(\"Checkout\")"
+  },
+  "checkout": {}
+}

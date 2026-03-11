@@ -1,0 +1,24 @@
+{
+  "buyVouchers": {},
+  "checkout": {},
+  "myOrder": {
+    "searchInput": "input[placeholder=\"Search by Booking Number, Order Number\"]",
+    "filterDateButton": "button:has-text(\"Filter Date\")",
+    "requestInvoiceButton": "button:has-text(\"Request e-Invoice\")",
+    "tabs": [
+      "button[role=\"tab\"]:has-text(\"All\")",
+      "button[role=\"tab\"]:has-text(\"To Receive\")",
+      "button[role=\"tab\"]:has-text(\"Completed\")",
+      "button[role=\"tab\"]:has-text(\"Cancelled\")"
+    ],
+    "orderCard": ".flex"
+  },
+  "orderDetail": {},
+  "inventory": {
+    "voucherItem": ".sticky"
+  },
+  "receipt": {},
+  "login": {
+    "emailInput": "Enter your email"
+  }
+}

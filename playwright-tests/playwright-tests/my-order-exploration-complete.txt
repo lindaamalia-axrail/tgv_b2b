@@ -1,0 +1,42 @@
+=== LOGGING IN ===
+✓ Logged in successfully
+
+=== EXPLORING BUY VOUCHERS PAGE ===
+✓ Saved buy-vouchers-page.html
+Found 0 potential voucher cards
+
+=== EXPLORING CHECKOUT PAGE ===
+Current URL: https://corporate-voucher-stg.fam-stg.click/buy
+
+=== EXPLORING MY ORDER PAGE ===
+✓ Saved my-orders-page-updated.html
+Search input: input[placeholder="Search by Booking Number, Order Number"]
+Filter button: button:has-text("Filter Date")
+Invoice button: button:has-text("Request e-Invoice")
+Found 4 tabs
+Tabs: All, To Receive, Completed, Cancelled
+Found 8 potential order cards
+Order card selector: .flex
+
+=== EXPLORING ORDER DETAIL PAGE ===
+✓ Saved order-detail-page-updated.html
+Could not click order card: Error: locator.isVisible: SyntaxError: Invalid flags supplied to RegExp constructor ', [data-testid="order-number"]'
+    at new RegExp (<anonymous>)
+    at createTextMatcher (<anonymous>:7998:16)
+    at Object.queryAll (<anonymous>:6874:33)
+    at InjectedScript._queryEngineAll (<anonymous>:6847:49)
+    at InjectedScript.querySelectorAll (<anonymous>:6834:30)
+    at InjectedScript.querySelector (<anonymous>:6746:25)
+    at eval (eval at evaluate (:290:30), <anonymous>:2:34)
+    at UtilityScript.evaluate (<anonymous>:292:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)
+Call log:
+[2m    - checking visibility of locator('text=/Order.*#/, text=/TGV/, [data-testid="order-number"]').first()[22m
+
+
+=== EXPLORING INVENTORY PAGE ===
+✓ Saved inventory-page.html
+Found 17 potential voucher items in inventory
+Voucher item selector: .sticky
+
+✓ Saved my-order-selectors-complete.json

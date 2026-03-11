@@ -1,0 +1,28 @@
+{
+  "navigation": {},
+  "mainPage": {
+    "editButton": "[role=\"row\"] [role=\"cell\"]:last-child button",
+    "checkbox": "input[type=\"checkbox\"]"
+  },
+  "searchFilters": {
+    "companyName": "input[placeholder*=\"Company Name\"]",
+    "email": "input[placeholder*=\"Email\"]",
+    "phone": "input[placeholder*=\"Phone Number\"]"
+  },
+  "exportButtons": {
+    "main": "button:has-text(\"Export\")"
+  },
+  "editModal": {
+    "saveButton": "button:has-text(\"Save\")",
+    "tabs": "[class*=\"tab\"]"
+  },
+  "purchaseHistory": {
+    "section": "text=Purchase History",
+    "filterDateButton": "button:has-text(\"Filter Date\")"
+  },
+  "inventory": {
+    "tab": "button:has-text(\"Inventory\")",
+    "downloadButton": "button:has-text(\"Download\")"
+  },
+  "sorting": {}
+}

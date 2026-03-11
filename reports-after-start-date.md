@@ -1,0 +1,71 @@
+- generic [ref=e571]:
+  - banner [ref=e573]:
+    - generic [ref=e574]:
+      - img [ref=e575]
+      - button "Linda Admin" [ref=e576] [cursor=pointer]:
+        - img [ref=e577]
+        - paragraph [ref=e579]: Linda Admin
+        - img [ref=e580]
+  - generic [ref=e582]:
+    - generic [ref=e585]:
+      - button [ref=e588] [cursor=pointer]:
+        - img [ref=e590]
+      - link "edit" [ref=e593] [cursor=pointer]:
+        - /url: /orders
+        - img "edit" [ref=e595]
+      - link "edit" [ref=e597] [cursor=pointer]:
+        - /url: /report
+        - img "edit" [ref=e599]
+      - button "edit" [ref=e601] [cursor=pointer]:
+        - img "edit" [ref=e605]
+      - link "edit" [ref=e607] [cursor=pointer]:
+        - /url: /corporate-management
+        - img "edit" [ref=e609]
+      - button "edit" [ref=e611] [cursor=pointer]:
+        - img "edit" [ref=e615]
+      - button "edit" [ref=e617] [cursor=pointer]:
+        - img "edit" [ref=e621]
+      - button "edit" [ref=e623] [cursor=pointer]:
+        - img "edit" [ref=e627]
+    - generic [ref=e629]:
+      - navigation [ref=e630]:
+        - list [ref=e631]:
+          - listitem [ref=e632]: Analytic
+          - listitem [ref=e633]:
+            - img [ref=e634]
+          - listitem [ref=e636]: Report
+      - generic [ref=e637]:
+        - heading "Report" [level=5] [ref=e638]
+        - img [ref=e640]
+      - generic [ref=e642]:
+        - generic [ref=e643]:
+          - heading "Sales Report Date Range" [level=3] [ref=e644]
+          - generic [ref=e645]:
+            - generic [ref=e646]:
+              - button "01/03/2026" [active] [ref=e736] [cursor=pointer]:
+                - generic [ref=e648]:
+                  - text: 01/03/2026
+                  - img [ref=e650]
+              - paragraph [ref=e686]: Start date is required
+            - button "End date" [ref=e653] [cursor=pointer]:
+              - generic [ref=e654]:
+                - generic [ref=e655]: End date
+                - img [ref=e656]
+          - button "Download Report" [ref=e658] [cursor=pointer]:
+            - img [ref=e688]
+            - text: Download Report
+        - separator [ref=e664]
+        - generic [ref=e665]:
+          - heading "Remind Me Report Date Range" [level=3] [ref=e666]
+          - generic [ref=e667]:
+            - button "Start date" [ref=e669] [cursor=pointer]:
+              - generic [ref=e670]:
+                - generic [ref=e671]: Start date
+                - img [ref=e672]
+            - button "End date" [ref=e675] [cursor=pointer]:
+              - generic [ref=e676]:
+                - generic [ref=e677]: End date
+                - img [ref=e678]
+          - button "Download Report" [ref=e680] [cursor=pointer]:
+            - img [ref=e682]
+            - text: Download Report

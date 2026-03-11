@@ -1,0 +1,122 @@
+=== USER MANAGEMENT DETAILED EXPLORATION ===
+
+Logging in...
+✓ Logged in. Current URL: https://corpvoucher.fam-stg.click/login
+
+=== ALL USERS PAGE ===
+
+Current URL: https://corpvoucher.fam-stg.click/user-listing
+
+--- PAGE STRUCTURE ---
+✓ Page HTML saved to user-management-page.html
+
+--- ALL BUTTONS ---
+Button 1: "Linda Admin" | aria-label: "null" | class: "text-black flex gap-2 items-center"
+Button 2: "Add User" | aria-label: "null" | class: "MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation css-18k5b4e"
+Button 3: "" | aria-label: "Sort" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u"
+Button 4: "" | aria-label: "Sort" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u"
+Button 5: "" | aria-label: "Sort" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u"
+Button 6: "" | aria-label: "Sort" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u"
+Button 7: "" | aria-label: "Sort" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u"
+Button 8: "" | aria-label: "Sort" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u"
+Button 9: "" | aria-label: "Sort" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u"
+Button 10: "" | aria-label: "null" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-nm0ua4"
+Button 11: "" | aria-label: "null" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-nm0ua4"
+Button 12: "" | aria-label: "null" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-nm0ua4"
+Button 13: "" | aria-label: "null" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-nm0ua4"
+Button 14: "" | aria-label: "null" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-nm0ua4"
+Button 15: "" | aria-label: "Go to previous page" | class: "MuiButtonBase-root Mui-disabled MuiIconButton-root Mui-disabled MuiIconButton-colorInherit MuiIconButton-sizeMedium css-1deacqj"
+Button 16: "" | aria-label: "Go to next page" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeMedium css-1deacqj"
+Button 17: "Add New" | aria-label: "null" | class: "MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButton-colorPrimary MuiButton-disableElevation css-18k5b4e"
+Button 18: "" | aria-label: "Sort" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u"
+Button 19: "" | aria-label: "Sort" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u"
+Button 20: "" | aria-label: "Sort" | class: "MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeSmall css-1j7qk7u"
+
+--- ALL LINKS ---
+Link 1: "Order" | href: "/orders"
+Link 2: "Report" | href: "/report"
+Link 3: "HO Code Master List" | href: "/ho-code-master-listing"
+Link 4: "Alpha Code Master List" | href: "/voucher-codes"
+Link 5: "Corporate Voucher" | href: "/corporate-vouchers"
+Link 6: "Category" | href: "/category"
+Link 7: "Corporate Management" | href: "/corporate-management"
+Link 8: "All Users" | href: "/user-listing"
+Link 9: "Roles" | href: "/role-listing"
+Link 10: "Audit Log" | href: "/audit-log"
+Link 11: "Homepage" | href: "/content-management/homepage"
+Link 12: "Popular Search" | href: "/content-management/popular-search"
+Link 13: "Social Media" | href: "/social-media"
+Link 14: "Users" | href: "null"
+Link 15: "All User" | href: "null"
+
+--- ALL INPUTS ---
+Input 1: name="null" | type="text" | placeholder="Search" | id=":r6:"
+Input 2: name="null" | type="checkbox" | placeholder="null" | id="null"
+Input 3: name="null" | type="checkbox" | placeholder="null" | id="null"
+Input 4: name="null" | type="checkbox" | placeholder="null" | id="null"
+Input 5: name="null" | type="checkbox" | placeholder="null" | id="null"
+Input 6: name="null" | type="checkbox" | placeholder="null" | id="null"
+Input 7: name="null" | type="null" | placeholder="null" | id="null"
+Input 8: name="null" | type="text" | placeholder="Search" | id=":ra:"
+Input 9: name="null" | type="checkbox" | placeholder="null" | id="null"
+Input 10: name="null" | type="checkbox" | placeholder="null" | id="null"
+Input 11: name="null" | type="checkbox" | placeholder="null" | id="null"
+Input 12: name="null" | type="checkbox" | placeholder="null" | id="null"
+Input 13: name="null" | type="checkbox" | placeholder="null" | id="null"
+Input 14: name="null" | type="checkbox" | placeholder="null" | id="null"
+Input 15: name="null" | type="null" | placeholder="null" | id="null"
+
+--- ALL SELECTS ---
+
+--- TABLES ---
+Found 0 table(s)
+
+--- HEADINGS ---
+H1: 
+H2: 
+H3: 
+
+--- TABS/NAVIGATION ---
+
+✓ Screenshot 1 saved
+
+--- TRYING TO FIND ADD USER BUTTON ---
+✓ Found: button:has-text("Add") - "Add User"
+✓ Found: button:has-text("New") - "Add New"
+
+=== ROLES PAGE ===
+
+Current URL: https://corpvoucher.fam-stg.click/role-listing
+✓ Roles page HTML saved
+
+--- ROLES PAGE BUTTONS ---
+Button 1: "Linda Admin"
+Button 2: "Add Role"
+Button 3: ""
+Button 4: ""
+Button 5: ""
+Button 6: ""
+Button 7: ""
+Button 8: ""
+Button 9: ""
+Button 10: ""
+Button 11: ""
+Button 12: ""
+Button 13: ""
+Button 14: ""
+Button 15: ""
+
+--- ROLES PAGE TABLES ---
+✓ Screenshot 2 saved
+
+=== AUDIT LOG PAGE ===
+
+Current URL: https://corpvoucher.fam-stg.click/audit-log
+✓ Audit log page HTML saved
+
+--- AUDIT LOG FILTERS ---
+Input 1: name="null" | type="text" | placeholder="Module"
+Input 2: name="null" | type="text" | placeholder="Username"
+Input 3: name="null" | type="button" | placeholder="Timestamp"
+Input 4: name="null" | type="null" | placeholder="null"
+✓ Screenshot 3 saved

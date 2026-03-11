@@ -1,0 +1,85 @@
+{
+  "sendVouchers": {
+    "page": {
+      "url": "/send-voucher",
+      "searchInput": "input[placeholder*='Search by Batch' i]",
+      "filterDateButton": "button:has-text('Filter Date')",
+      "downloadReportButton": "button:has-text('Download Report')",
+      "sendVoucherButton": "a:has-text('Send Voucher')"
+    },
+    "emptyState": {
+      "message": "text='No voucher batches found'",
+      "description": "text='Create your first voucher batch to get started'"
+    },
+    "batchList": {
+      "table": "table",
+      "tableRow": "table tbody tr",
+      "checkbox": "table tbody tr input[type='checkbox']",
+      "viewReportButton": "button:has-text('View Report')"
+    }
+  },
+  "inventory": {
+    "page": {
+      "url": "/inventory",
+      "searchInput": "input[placeholder*='Search by Voucher Name' i]",
+      "downloadReportButton": "button:has-text('Download Report')"
+    },
+    "emptyState": {
+      "message": "text='No inventory items found'",
+      "description": "text='Try adjusting your search or filters'"
+    },
+    "inventoryList": {
+      "table": "table",
+      "tableRow": "table tbody tr",
+      "checkbox": "table tbody tr input[type='checkbox']",
+      "voucherCard": "[class*='card']"
+    }
+  },
+  "cart": {
+    "page": {
+      "url": "/cart",
+      "heading": "h1:has-text('My Cart')",
+      "backButton": "button:has-text('Back')",
+      "getQuotationButton": "button:has-text('Get Quotation')",
+      "continueShoppingButton": "button:has-text('Continue Shopping')",
+      "checkoutButton": "button:has-text('Checkout')"
+    },
+    "emptyState": {
+      "image": "img[alt='no items']",
+      "message": "text='Your cart is empty'",
+      "description": "text=\"Let's find your favorites and add them here\""
+    },
+    "cartItems": {
+      "selectAllCheckbox": "checkbox[name='Select All'], input[type='checkbox']:has-text('Select All')",
+      "itemCheckbox": "input[type='checkbox']",
+      "itemCard": "[class*='cart'], [class*='item']",
+      "itemImage": "img[alt*='Pass'], img[alt*='Voucher'], img[alt*='Card']",
+      "itemName": "p, [class*='name']",
+      "itemPrice": "p:has-text('RM')",
+      "quantityInput": "input[type='number'], [role='spinbutton']",
+      "deleteButton": "button:has-text('Delete')"
+    },
+    "summary": {
+      "total": "text=/Total:/",
+      "totalAmount": "[class*='total'], text=/RM\\d+/"
+    },
+    "messages": {
+      "errorToast": "status, [role='status'], [role='alert']",
+      "errorMessage": "text='Please select an item to generate a quotation'",
+      "successMessage": "text='Added to cart!'"
+    }
+  },
+  "common": {
+    "navigation": {
+      "buyVoucherLink": "a:has-text('Buy Voucher')",
+      "sendVoucherLink": "a:has-text('Send Voucher')",
+      "myOrderLink": "a:has-text('My Order')",
+      "inventoryLink": "a:has-text('Inventory')",
+      "cartLink": "a:has-text('Shopping Bag'), link[href='/cart']"
+    },
+    "buttons": {
+      "downloadReport": "button:has-text('Download Report'), button:has-text('Download')",
+      "getQuotation": "button:has-text('Get Quotation'), button:has-text('Quotation')"
+    }
+  }
+}

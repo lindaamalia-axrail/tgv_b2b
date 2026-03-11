@@ -1,0 +1,21 @@
+=== Starting My Order Flow Exploration ===
+
+Step 1: Login to Public Web
+Filling login credentials...
+✓ Logged in successfully
+
+=== Exploring Buy Vouchers Page ===
+
+=== Exploring My Order Page ===
+Current URL: https://corporate-voucher-stg.fam-stg.click/my-orders
+✓ Found 8 orders with selector: div[class*="order"]
+✓ Found filter date button: button:has-text("Filter Date")
+✓ Found search input: input[placeholder*="Search"]
+✓ Found request e-invoice button: button:has-text("Request e-invoice")
+
+=== Exploring Order Detail Page ===
+Current URL: https://corporate-voucher-stg.fam-stg.click/my-orders
+
+=== Exploring Inventory Page ===
+
+✓ Selectors saved to my-order-selectors.json

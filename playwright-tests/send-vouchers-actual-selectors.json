@@ -1,0 +1,119 @@
+{
+  "login": {
+    "emailInput": "input[type=\"email\"]",
+    "emailInputByRole": "page.getByRole('textbox', { name: 'Email Address' })",
+    "passwordInput": "input[type=\"password\"]",
+    "passwordInputByRole": "page.getByRole('textbox', { name: 'Password' })",
+    "loginButton": "button:has-text(\"Sign In\")",
+    "loginButtonByRole": "page.getByRole('button', { name: 'Sign In' })"
+  },
+  "navigation": {
+    "buyVoucherLink": "link:has-text(\"Buy Voucher\")",
+    "sendVoucherLink": "link:has-text(\"Send Voucher\")",
+    "myOrderLink": "link:has-text(\"My Order\")",
+    "inventoryLink": "link:has-text(\"Inventory\")"
+  },
+  "sendVoucherCreate": {
+    "pageTitle": "heading:has-text(\"Send Voucher\")",
+    "pageDescription": "text=Send vouchers to your recipients by uploading their details in a CSV file",
+    "backButton": "button:has-text(\"Back\")",
+    "howToSendVoucherSection": "heading:has-text(\"How To Send Voucher\")",
+    "step1Title": "heading:has-text(\"Step 1: Set Up Your Voucher Send\")",
+    "step2Title": "heading:has-text(\"Step 2: Download the Recipient Template\")",
+    "step3Title": "heading:has-text(\"Step 3: Upload and Send\")",
+    "totalRecipientsLabel": "text=Total Number of Recipient",
+    "totalRecipientsInput": "input[type=\"number\"]",
+    "totalRecipientsInputByPlaceholder": "textbox[placeholder=\"0\"]",
+    "selectVoucherLabel": "text=Select Voucher",
+    "selectVoucherButton": "button:has-text(\"+ Select Voucher\")",
+    "selectVoucherButtonByRole": "page.getByRole('button', { name: '+ Select Voucher' })",
+    "nextButton": "button:has-text(\"Next\")",
+    "nextButtonDisabled": "button:has-text(\"Next\")[disabled]"
+  },
+  "selectVoucherModal": {
+    "modalTitle": "heading:has-text(\"Select Voucher\")",
+    "modalDescription": "text=Select vouchers to send (Maximum 3 unique vouchers per batch)",
+    "closeButton": "button[aria-label=\"Close\"]",
+    "searchInput": "textbox[placeholder=\"Search voucher\"]",
+    "searchInputByRole": "page.getByRole('textbox', { name: 'Search voucher' })",
+    "selectButton": "button:has-text(\"Select\")",
+    "selectButtonByRole": "page.getByRole('button', { name: 'Select' })",
+    "voucherCheckbox": "input[type=\"checkbox\"]",
+    "noVouchersMessage": "text=No inventory items found"
+  },
+  "sendVoucherList": {
+    "pageTitle": "heading:has-text(\"Send Voucher\")",
+    "searchInput": "textbox[placeholder=\"Search by Batch\"]",
+    "searchInputByRole": "page.getByRole('textbox', { name: 'Search by Batch' })",
+    "filterDateButton": "button:has-text(\"Filter Date\")",
+    "filterDateButtonByRole": "page.getByRole('button', { name: 'Filter Date' })",
+    "downloadReportButton": "button:has-text(\"Download Report\")",
+    "sendVoucherButton": "link:has-text(\"Send Voucher\")",
+    "sendVoucherButtonByRole": "page.getByRole('link', { name: 'Send Voucher' })",
+    "noBatchesMessage": "text=No voucher batches found",
+    "noBatchesDescription": "text=Create your first voucher batch to get started",
+    "loadingMessage": "text=Loading voucher batches...",
+    "batchTable": "[role=\"table\"]",
+    "batchList": "[class*=\"batch\"]"
+  },
+  "myOrders": {
+    "pageTitle": "heading:has-text(\"My Order\")",
+    "searchInput": "textbox[placeholder=\"Search by Booking Number, Order Number\"]",
+    "searchInputByRole": "page.getByRole('textbox', { name: 'Search by Booking Number, Order Number' })",
+    "filterDateButton": "button:has-text(\"Filter Date\")",
+    "requestEInvoiceButton": "button:has-text(\"Request e-Invoice\")",
+    "requestEInvoiceButtonByRole": "page.getByRole('button', { name: 'Request e-Invoice' })",
+    "allTab": "tab:has-text(\"All\")",
+    "allTabByRole": "page.getByRole('tab', { name: 'All' })",
+    "toReceiveTab": "tab:has-text(\"To Receive\")",
+    "completedTab": "tab:has-text(\"Completed\")",
+    "cancelledTab": "tab:has-text(\"Cancelled\")",
+    "noTransactionsMessage": "text=No transactions found",
+    "noOrdersMessage": "text=No orders match your filters",
+    "clearFiltersButton": "button:has-text(\"Clear filters to see all orders\")",
+    "sendVoucherButton": "button:has-text(\"Send Voucher\")",
+    "orderList": "[class*=\"order\"]",
+    "orderTable": "[role=\"table\"]"
+  },
+  "inventory": {
+    "pageTitle": "heading:has-text(\"Inventory\")",
+    "searchInput": "textbox[placeholder=\"Search by Voucher Name\"]",
+    "searchInputByRole": "page.getByRole('textbox', { name: 'Search by Voucher Name' })",
+    "downloadReportButton": "button:has-text(\"Download Report\")",
+    "noItemsMessage": "text=No inventory items found",
+    "noItemsDescription": "text=Try adjusting your search or filters",
+    "loadingMessage": "text=Loading inventory items...",
+    "sendVoucherButton": "button:has-text(\"Send Voucher\")",
+    "voucherItems": "[class*=\"voucher\"]",
+    "inventoryTable": "[role=\"table\"]"
+  },
+  "buyVoucher": {
+    "voucherProductLink": "a[href*=\"/products/\"]",
+    "buyNowButton": "button:has-text(\"Buy Now\")",
+    "proceedToPaymentButton": "button:has-text(\"Proceed to Payment\")"
+  },
+  "step2UploadCSV": {
+    "downloadTemplateLink": "a:has-text(\"Download\")",
+    "downloadTemplateButton": "button:has-text(\"Download\")",
+    "instructionsText": "text=/instruction|step|how to/i",
+    "fileInput": "input[type=\"file\"]",
+    "uploadResultSummary": "text=/upload.*result|result.*summary/i",
+    "invalidPhoneCount": "text=/invalid.*phone|phone.*invalid/i",
+    "invalidEmailCount": "text=/invalid.*email|email.*invalid/i",
+    "uploadAgainButton": "button:has-text(\"Upload Again\")",
+    "reuploadButton": "button:has-text(\"Re-upload\")",
+    "downloadMakeAdjustmentsButton": "button:has-text(\"Make Adjustment\")",
+    "sendVoucherButton": "button:has-text(\"Send Voucher\")",
+    "sendButton": "button:has-text(\"Send\")"
+  },
+  "errorMessages": {
+    "insufficientBalance": "text=/insufficient|not enough|exceed|more than.*owned/i",
+    "invalidPhoneFormat": "text=/invalid.*phone|phone.*invalid/i",
+    "invalidEmailFormat": "text=/invalid.*email|email.*invalid/i",
+    "systemError": "text=/system error|contact.*help desk/i",
+    "notRegistered": "text=/not registered|mobile.*not registered/i"
+  },
+  "helpDesk": {
+    "helpDeskLink": "a[href*=\"help.tgv.com.my\"]"
+  }
+}

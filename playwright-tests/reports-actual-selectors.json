@@ -1,0 +1,30 @@
+{
+  "salesReport": {
+    "heading": "h3:has-text(\"Sales Report Date Range\")",
+    "startDateButton": "button:has-text(\"Start date\")",
+    "endDateButton": "button:has-text(\"End date\")",
+    "downloadButton": "button:has-text(\"Download Report\")",
+    "startDateValidation": "p:has-text(\"Start date is required\")",
+    "endDateValidation": "p:has-text(\"End date must be after start date\")"
+  },
+  "remindMeReport": {
+    "heading": "h3:has-text(\"Remind Me Report Date Range\")",
+    "startDateButton": "button:has-text(\"Start date\")",
+    "endDateButton": "button:has-text(\"End date\")",
+    "downloadButton": "button:has-text(\"Download Report\")"
+  },
+  "toast": {
+    "errorMessage": "status:has-text(\"Failed to initiate report download\")"
+  },
+  "datePicker": {
+    "dialog": "dialog",
+    "grid": "grid",
+    "gridcell": "gridcell",
+    "previousMonth": "button:has-text(\"Go to previous month\")",
+    "nextMonth": "button:has-text(\"Go to next month\")",
+    "todayButton": "button:has-text(\"Today\")"
+  },
+  "navigation": {
+    "reportLink": "a[href=\"/report\"]"
+  }
+}

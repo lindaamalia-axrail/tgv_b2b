@@ -1,0 +1,23 @@
+🚀 Starting Send Voucher Flow Exploration...
+
+📝 Step: Login to Public Web
+✅ Login successful
+
+📝 Exploring Navigation Options...
+✅ Navigation elements captured
+
+📝 Exploring Step 1: Add Vouchers...
+⚠️  Next button not enabled, skipping to Step 2 manually...
+✅ Step 1 elements captured
+
+📝 Exploring Step 2: Upload CSV...
+✅ Step 2 elements captured
+
+📝 Exploring Send Voucher Status Page...
+❌ Error during exploration: page.goto: net::ERR_NAME_NOT_RESOLVED at https://b2b-uat.tgv.com.my/send-voucher
+Call log:
+[2m  - navigating to "https://b2b-uat.tgv.com.my/send-voucher", waiting until "load"[22m
+
+    at exploreSendVoucherFlow (/Users/lindanrsn/Documents/tgv-b2b/playwright-tests/scripts/explore-send-voucher-flow.ts:402:16) {
+  name: 'Error'
+}

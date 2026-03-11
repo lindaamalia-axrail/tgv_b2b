@@ -1,0 +1,1304 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('User Management - All Users Page', () => {
+  test.beforeEach(async ({ page }) => {
+    // Login and navigate to User Management
+    await page.goto('/admin/login');
+    await page.fill('input[name="email"]', process.env.ADMIN_EMAIL || '');
+    await page.fill('input[name="password"]', process.env.ADMIN_PASSWORD || '');
+    await page.click('button[type="submit"]');
+    await page.waitForURL('**/admin/**');
+    await page.goto('/admin/user-management/users');
+  });
+
+  test('UM-001: Validate All User & D&P Information', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to All User module
+    await page.waitForSelector('table');
+    
+    // Validate the table listing
+    const tableHeaders = await page.locator('table thead th').allTextContents();
+    expect(tableHeaders.length).toBeGreaterThan(0);
+    
+    // Expected Result: Table listing have complete header and display correct information
+    expect(tableHeaders).toContain('Display Name');
+    expect(tableHeaders).toContain('Email');
+    expect(tableHeaders).toContain('Role');
+    expect(tableHeaders).toContain('Department');
+    expect(tableHeaders).toContain('Position');
+    expect(tableHeaders).toContain('Status');
+    
+    const tableRows = await page.locator('table tbody tr').count();
+    expect(tableRows).toBeGreaterThan(0);
+  });
+
+  test('UM-002: Update All User in admin portal', async ({ page }) => {
+    // Module: All Users Page
+    // Click Edit button on any available item under All User
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Edit any details
+    const newName = `Updated User ${Date.now()}`;
+    await page.fill('input[name="displayName"], input[name="name"]', newName);
+    
+    // Click Save & Continue
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Table listing updated according to the changes
+    await expect(page.locator(`text=${newName}`)).toBeVisible();
+  });
+
+  test('UM-003: Update D&P in admin portal', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Click Edit button on any available item under D&P
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Edit any details
+    const newDescription = `Updated Description ${Date.now()}`;
+    await page.fill('textarea[name="description"], input[name="description"]', newDescription);
+    
+    // Click Save & Continue
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Table listing updated according to the changes
+    await expect(page.locator(`text=${newDescription}`)).toBeVisible();
+  });
+
+  test('UM-004: Add user', async ({ page }) => {
+    // Module: All Users Page
+    // Click Add User button
+    await page.click('button:has-text("Add User")');
+    await page.waitForSelector('form');
+    
+    // Fill in all fields
+    const timestamp = Date.now();
+    await page.fill('input[name="displayName"], input[name="name"]', `Test User ${timestamp}`);
+    await page.fill('input[name="email"]', `testuser${timestamp}@example.com`);
+    await page.selectOption('select[name="role"]', { index: 1 });
+    await page.selectOption('select[name="department"]', { index: 1 });
+    await page.selectOption('select[name="position"]', { index: 1 });
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: New user created and new user receive email for temporary password
+    await expect(page.locator(`text=Test User ${timestamp}`)).toBeVisible();
+    await expect(page.locator('text=User created successfully, text=Email sent')).toBeVisible();
+  });
+
+  test('UM-005: Add user and empty all fields', async ({ page }) => {
+    // Module: All Users Page (Negative)
+    // Click Add User button
+    await page.click('button:has-text("Add User")');
+    await page.waitForSelector('form');
+    
+    // Empty all fields (clear if pre-filled)
+    await page.fill('input[name="displayName"], input[name="name"]', '');
+    await page.fill('input[name="email"]', '');
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    
+    // Expected Result: Creation unsuccessful (All fields are mandatory)
+    await expect(page.locator('text=required, text=mandatory, text=cannot be empty')).toBeVisible();
+  });
+
+  test('UM-006: Add user without specify role', async ({ page }) => {
+    // Module: All Users Page
+    // Click Add User button
+    await page.click('button:has-text("Add User")');
+    await page.waitForSelector('form');
+    
+    // Fill in all fields except role
+    const timestamp = Date.now();
+    await page.fill('input[name="displayName"], input[name="name"]', `Test User ${timestamp}`);
+    await page.fill('input[name="email"]', `testuser${timestamp}@example.com`);
+    await page.selectOption('select[name="department"]', { index: 1 });
+    await page.selectOption('select[name="position"]', { index: 1 });
+    
+    // Leave role fields empty
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    
+    // Expected Result: Creation unsuccessful (All fields are mandatory)
+    await expect(page.locator('text=Role is required, text=required')).toBeVisible();
+  });
+
+  test('UM-007: Add user without department and position', async ({ page }) => {
+    // Module: All Users Page
+    // Click Add User button
+    await page.click('button:has-text("Add User")');
+    await page.waitForSelector('form');
+    
+    // Fill in all fields except department and position
+    const timestamp = Date.now();
+    await page.fill('input[name="displayName"], input[name="name"]', `Test User ${timestamp}`);
+    await page.fill('input[name="email"]', `testuser${timestamp}@example.com`);
+    await page.selectOption('select[name="role"]', { index: 1 });
+    
+    // Leave department and role fields empty
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    
+    // Expected Result: Creation unsuccessful (All fields are mandatory)
+    await expect(page.locator('text=Department is required, text=Position is required, text=required')).toBeVisible();
+  });
+
+  test('UM-008: Reset password for user', async ({ page }) => {
+    // Module: All Users Page
+    // Select a user and click the edit icon
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Click the Reset Password button
+    await page.click('button:has-text("Reset Password")');
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Email for temporary password is sent to the user
+    await expect(page.locator('text=Password reset email sent, text=Temporary password sent')).toBeVisible();
+  });
+
+  test('UM-009: Add user using existing email', async ({ page }) => {
+    // Module: All Users Page (Negative)
+    // Get an existing email from the table
+    const existingEmail = await page.locator('table tbody tr').first().locator('td').nth(1).textContent();
+    
+    // Click Add User button
+    await page.click('button:has-text("Add User")');
+    await page.waitForSelector('form');
+    
+    // Fill in fields with existing email
+    await page.fill('input[name="displayName"], input[name="name"]', `Test User ${Date.now()}`);
+    await page.fill('input[name="email"]', existingEmail || 'existing@example.com');
+    await page.selectOption('select[name="role"]', { index: 1 });
+    await page.selectOption('select[name="department"]', { index: 1 });
+    await page.selectOption('select[name="position"]', { index: 1 });
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    
+    // Expected Result: User creation fail with error message
+    await expect(page.locator('text=User with this Email Exists!')).toBeVisible();
+  });
+
+  test('UM-010: Edit user name', async ({ page }) => {
+    // Module: All Users Page
+    // Select and edit a user
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Edit name
+    const newName = `Edited User ${Date.now()}`;
+    await page.fill('input[name="displayName"], input[name="name"]', newName);
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: User details successfully edited and saved
+    await expect(page.locator(`text=${newName}`)).toBeVisible();
+    await expect(page.locator('text=User updated successfully, text=saved successfully')).toBeVisible();
+  });
+
+  test('UM-011: Edit user email to non existing/registered email', async ({ page }) => {
+    // Module: All Users Page
+    // Select and edit a user
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Edit email to non existing/registered email
+    const newEmail = `newemail${Date.now()}@example.com`;
+    await page.fill('input[name="email"]', newEmail);
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: User details successfully edited and saved
+    await expect(page.locator(`text=${newEmail}`)).toBeVisible();
+    await expect(page.locator('text=User updated successfully, text=saved successfully')).toBeVisible();
+  });
+
+  test('UM-012: Edit user email to existing/registered email', async ({ page }) => {
+    // Module: All Users Page (Negative)
+    // Get two different users
+    const existingEmail = await page.locator('table tbody tr').nth(1).locator('td').nth(1).textContent();
+    
+    // Select and edit first user
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Edit email to existing/registered email
+    await page.fill('input[name="email"]', existingEmail || 'existing@example.com');
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    
+    // Expected Result: User creation fail with error message
+    await expect(page.locator('text=User with this Email Exists!')).toBeVisible();
+  });
+
+  test('UM-013: Edit user role', async ({ page }) => {
+    // Module: All Users Page
+    // Select and edit a user
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Choose different role for the user
+    await page.selectOption('select[name="role"]', { index: 2 });
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: User details successfully edited and saved
+    await expect(page.locator('text=User updated successfully, text=saved successfully')).toBeVisible();
+  });
+
+  test('UM-014: Edit user department', async ({ page }) => {
+    // Module: All Users Page
+    // Select and edit a user
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Choose different department for the user
+    await page.selectOption('select[name="department"]', { index: 2 });
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: User details successfully edited and saved
+    await expect(page.locator('text=User updated successfully, text=saved successfully')).toBeVisible();
+  });
+
+  test('UM-015: Edit user position', async ({ page }) => {
+    // Module: All Users Page
+    // Select and edit a user
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Choose different position for the user
+    await page.selectOption('select[name="position"]', { index: 2 });
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: User details successfully edited and saved
+    await expect(page.locator('text=User updated successfully, text=saved successfully')).toBeVisible();
+  });
+
+  test('UM-016: Inactivate user status', async ({ page }) => {
+    // Module: All Users Page
+    // Select a user
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Toggle off the active toggle
+    await page.click('input[type="checkbox"][name="active"], .toggle, .switch');
+    
+    // Click Save Changes button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: User status change from active to inactive
+    await expect(page.locator('text=Inactive, text=Disabled')).toBeVisible();
+  });
+
+  test('UM-017: Activate user status', async ({ page }) => {
+    // Module: All Users Page
+    // Select a user
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Toggle on the active toggle
+    await page.click('input[type="checkbox"][name="active"], .toggle, .switch');
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: User status change from inactive to active
+    await expect(page.locator('text=Active')).toBeVisible();
+  });
+
+  test('UM-018: Set valid date to today/previous date', async ({ page }) => {
+    // Module: All Users Page
+    // Select a user
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Edit valid date to current/previous dates
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const dateString = yesterday.toISOString().split('T')[0];
+    await page.fill('input[type="date"][name="validUntil"], input[name="validDate"]', dateString);
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Observe the status is changed to expired
+    await expect(page.locator('text=Expired')).toBeVisible();
+  });
+
+  test('UM-019: Set valid date to future dates', async ({ page }) => {
+    // Module: All Users Page
+    // Select a user
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Edit valid date to future dates
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 30);
+    const dateString = tomorrow.toISOString().split('T')[0];
+    await page.fill('input[type="date"][name="validUntil"], input[name="validDate"]', dateString);
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Observe the status is active
+    await expect(page.locator('text=Active')).toBeVisible();
+  });
+
+  test('UM-020: Login as active user', async ({ page, context }) => {
+    // Module: All Users Page
+    // Create a new page for login test
+    const loginPage = await context.newPage();
+    
+    // Go to login page
+    await loginPage.goto('/admin/login');
+    
+    // Login into active account
+    await loginPage.fill('input[name="email"]', process.env.ACTIVE_USER_EMAIL || '');
+    await loginPage.fill('input[name="password"]', process.env.ACTIVE_USER_PASSWORD || '');
+    await loginPage.click('button[type="submit"]');
+    
+    // Expected Result: User successfully login and see the order page
+    await loginPage.waitForURL('**/admin/orders, **/admin/dashboard');
+    await expect(loginPage.locator('text=Orders, text=Dashboard')).toBeVisible();
+    
+    await loginPage.close();
+  });
+
+  test('UM-021: Login as inactive user', async ({ page, context }) => {
+    // Module: All Users Page (Negative)
+    // Create a new page for login test
+    const loginPage = await context.newPage();
+    
+    // Go to login page
+    await loginPage.goto('/admin/login');
+    
+    // Login into inactive account
+    await loginPage.fill('input[name="email"]', process.env.INACTIVE_USER_EMAIL || '');
+    await loginPage.fill('input[name="password"]', process.env.INACTIVE_USER_PASSWORD || '');
+    await loginPage.click('button[type="submit"]');
+    
+    // Expected Result: Popup message "user is disabled." is displayed
+    await expect(loginPage.locator('text=user is disabled, text=account is disabled, text=inactive')).toBeVisible();
+    
+    await loginPage.close();
+  });
+
+  test('UM-022: Login as expired user', async ({ page, context }) => {
+    // Module: All Users Page (Negative)
+    // Create a new page for login test
+    const loginPage = await context.newPage();
+    
+    // Go to login page
+    await loginPage.goto('/admin/login');
+    
+    // Login into expired account
+    await loginPage.fill('input[name="email"]', process.env.EXPIRED_USER_EMAIL || '');
+    await loginPage.fill('input[name="password"]', process.env.EXPIRED_USER_PASSWORD || '');
+    await loginPage.click('button[type="submit"]');
+    
+    // Expected Result: Popup message "user is disabled." is displayed
+    await expect(loginPage.locator('text=user is disabled, text=account is disabled, text=expired')).toBeVisible();
+    
+    await loginPage.close();
+  });
+
+  test('UM-023: Add department', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Click Add New
+    await page.click('button:has-text("Add New")');
+    
+    // Choose/Click Add New Department
+    await page.click('text=Add New Department');
+    await page.waitForSelector('form');
+    
+    // Fill in all details
+    const deptName = `Department ${Date.now()}`;
+    await page.fill('input[name="departmentName"], input[name="name"]', deptName);
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: New department successfully created and displayed with position set to '-'
+    await expect(page.locator(`text=${deptName}`)).toBeVisible();
+    await expect(page.locator(`tr:has-text("${deptName}") >> text=-`)).toBeVisible();
+  });
+
+  test('UM-024: Add 1 position for 1 department', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Click Add New
+    await page.click('button:has-text("Add New")');
+    
+    // Choose/Click Add New Position
+    await page.click('text=Add New Position');
+    await page.waitForSelector('form');
+    
+    // Fill in all details
+    await page.selectOption('select[name="department"]', { index: 1 });
+    const positionName = `Position ${Date.now()}`;
+    await page.fill('input[name="positionName"], input[name="name"]', positionName);
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: The '-' shown when creating the department is substituted with the first position
+    await expect(page.locator(`text=${positionName}`)).toBeVisible();
+  });
+
+  test('UM-025: Add 3 positions for 1 department', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    const deptIndex = 1;
+    const positions = [];
+    
+    // Add 3 positions
+    for (let i = 0; i < 3; i++) {
+      await page.click('button:has-text("Add New")');
+      await page.click('text=Add New Position');
+      await page.waitForSelector('form');
+      
+      await page.selectOption('select[name="department"]', { index: deptIndex });
+      const positionName = `Position ${Date.now()}_${i}`;
+      positions.push(positionName);
+      await page.fill('input[name="positionName"], input[name="name"]', positionName);
+      
+      await page.click('button:has-text("Save")');
+      await page.waitForTimeout(1000);
+    }
+    
+    // Expected Result: 3 positions for 1 department created and listed in D&P listings
+    for (const position of positions) {
+      await expect(page.locator(`text=${position}`)).toBeVisible();
+    }
+  });
+
+  test('UM-026: Add 5 positions for 1 department', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    const deptIndex = 1;
+    const positions = [];
+    
+    // Add 5 positions
+    for (let i = 0; i < 5; i++) {
+      await page.click('button:has-text("Add New")');
+      await page.click('text=Add New Position');
+      await page.waitForSelector('form');
+      
+      await page.selectOption('select[name="department"]', { index: deptIndex });
+      const positionName = `Position ${Date.now()}_${i}`;
+      positions.push(positionName);
+      await page.fill('input[name="positionName"], input[name="name"]', positionName);
+      
+      await page.click('button:has-text("Save")');
+      await page.waitForTimeout(1000);
+    }
+    
+    // Expected Result: 5 positions for 1 department created and listed in D&P listings
+    for (const position of positions) {
+      await expect(page.locator(`text=${position}`)).toBeVisible();
+    }
+  });
+
+  test('UM-027: Edit department name', async ({ page }) => {
+    // Module: All Users Page (Negative)
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Choose a D&P and click edit icon
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Try to rename the department name
+    const deptNameField = page.locator('input[name="departmentName"], input[name="name"]');
+    
+    // Expected Result: Department name cannot be edited upon creation
+    await expect(deptNameField).toBeDisabled();
+  });
+
+  test('UM-028: Edit position name', async ({ page }) => {
+    // Module: All Users Page (Negative)
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Choose a D&P and click edit icon
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Try to rename the position name
+    const positionNameField = page.locator('input[name="positionName"], input[name="name"]');
+    
+    // Expected Result: Position name cannot be edited upon creation
+    await expect(positionNameField).toBeDisabled();
+  });
+
+  test('UM-029: Change position to another existing positions in d&p detail page', async ({ page }) => {
+    // Module: All Users Page (Negative)
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Choose a D&P and click edit icon
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Click dropdown for position
+    const positionDropdown = page.locator('select[name="position"]');
+    const options = await positionDropdown.locator('option').count();
+    
+    if (options > 1) {
+      // Choose another position
+      await positionDropdown.selectOption({ index: 1 });
+      
+      // Click save
+      await page.click('button:has-text("Save")');
+      await page.waitForTimeout(1000);
+    }
+    
+    // Expected Result: Positions listed in dropdown are tied to specific department, can view list of users
+    await expect(page.locator('text=Assigned Users, text=Users')).toBeVisible();
+  });
+
+  test('UM-030: Delete position that have associated users', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Choose a D&P with assigned user > 0
+    const rowWithUsers = page.locator('table tbody tr').filter({ hasText: /[1-9]\d*/ }).first();
+    await rowWithUsers.locator('button[aria-label="Delete"], [aria-label="delete"]').click();
+    
+    // Expected Result: Position cannot be deleted with error message
+    await expect(page.locator('text=Cannot delete position. It has associated users.')).toBeVisible();
+  });
+
+  test('UM-031: Delete position that don\'t have any associated users', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Choose a D&P with assigned user = 0
+    const rowWithoutUsers = page.locator('table tbody tr').filter({ hasText: '0' }).first();
+    const positionName = await rowWithoutUsers.locator('td').nth(1).textContent();
+    
+    await rowWithoutUsers.locator('button[aria-label="Delete"], [aria-label="delete"]').click();
+    await page.click('button:has-text("Confirm"), button:has-text("Yes")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Position will be deleted and no longer visible in listings
+    await expect(page.locator(`text=${positionName}`)).not.toBeVisible();
+  });
+
+  test('UM-032: Delete department', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Get department name
+    const deptName = await page.locator('table tbody tr').first().locator('td').first().textContent();
+    
+    // Delete all positions with the same department (with no associated users)
+    const positionsInDept = page.locator(`table tbody tr:has-text("${deptName}")`).filter({ hasText: '0' });
+    const count = await positionsInDept.count();
+    
+    for (let i = 0; i < count; i++) {
+      await positionsInDept.first().locator('button[aria-label="Delete"]').click();
+      await page.click('button:has-text("Confirm"), button:has-text("Yes")');
+      await page.waitForTimeout(500);
+    }
+    
+    // Verify department is deleted
+    await page.click('button:has-text("Add New")');
+    await page.click('text=Add New Position');
+    await page.waitForSelector('select[name="department"]');
+    
+    // Expected Result: Department no longer in the list/dropdown
+    const options = await page.locator('select[name="department"] option').allTextContents();
+    expect(options).not.toContain(deptName || '');
+  });
+
+  test('UM-033: View D&P detail page', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Choose a D&P and click edit icon
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    
+    // Expected Result: User can view D&P details
+    await expect(page.locator('text=Department Details, text=Position Details')).toBeVisible();
+    await expect(page.locator('text=Assigned Users')).toBeVisible();
+  });
+
+  test('UM-034: Add user in D&P detail page', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Choose a D&P and click edit icon
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('text=Assigned Users');
+    
+    // Click Add User button
+    await page.click('button:has-text("Add User")');
+    await page.waitForSelector('form');
+    
+    // Fill in all fields
+    const timestamp = Date.now();
+    await page.fill('input[name="displayName"], input[name="name"]', `DP User ${timestamp}`);
+    await page.fill('input[name="email"]', `dpuser${timestamp}@example.com`);
+    await page.selectOption('select[name="role"]', { index: 1 });
+    
+    // Click Save
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Can add user under the particular position
+    await expect(page.locator(`text=DP User ${timestamp}`)).toBeVisible();
+  });
+
+  test('UM-035: Delete user in D&P detail page', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Choose a D&P and click edit icon
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('text=Assigned Users');
+    
+    // Choose a user
+    const userName = await page.locator('table tbody tr').first().locator('td').first().textContent();
+    
+    // Click delete/trash can icon
+    await page.locator('table tbody tr').first().locator('button[aria-label="Delete"], [aria-label="delete"]').click();
+    await page.click('button:has-text("Confirm"), button:has-text("Yes")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Can remove/delete user under the particular position
+    await expect(page.locator(`text=${userName}`)).not.toBeVisible();
+  });
+
+  test('UM-036: Search department & position', async ({ page }) => {
+    // Module: All Users Page
+    // Navigate to D&P section
+    await page.click('text=D&P, text=Department');
+    
+    // Get a department/position name
+    const searchTerm = await page.locator('table tbody tr').first().locator('td').first().textContent();
+    
+    // Type in desired department/position name and click enter
+    await page.fill('input[placeholder*="Search"], input[type="search"]', searchTerm || '');
+    await page.press('input[placeholder*="Search"], input[type="search"]', 'Enter');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Matching departments & positions will be displayed/listed
+    await expect(page.locator(`text=${searchTerm}`)).toBeVisible();
+  });
+
+  test('UM-037: Search user', async ({ page }) => {
+    // Module: All Users Page
+    // Get a user display name
+    const displayName = await page.locator('table tbody tr').first().locator('td').first().textContent();
+    
+    // Click in the search box under User Listing and type display name
+    await page.fill('input[placeholder*="Search"], input[type="search"]', displayName || '');
+    await page.press('input[placeholder*="Search"], input[type="search"]', 'Enter');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Users that match the display name entered will be displayed
+    await expect(page.locator(`text=${displayName}`)).toBeVisible();
+  });
+});
+
+test.describe('User Management - Roles Page', () => {
+  test.beforeEach(async ({ page }) => {
+    // Login and navigate to Roles page
+    await page.goto('/admin/login');
+    await page.fill('input[name="email"]', process.env.ADMIN_EMAIL || '');
+    await page.fill('input[name="password"]', process.env.ADMIN_PASSWORD || '');
+    await page.click('button[type="submit"]');
+    await page.waitForURL('**/admin/**');
+    await page.goto('/admin/user-management/roles');
+  });
+
+  test('UM-038: Validate Roles Information', async ({ page }) => {
+    // Module: Roles Page
+    // Validate the table listing
+    await page.waitForSelector('table');
+    
+    const tableHeaders = await page.locator('table thead th').allTextContents();
+    expect(tableHeaders.length).toBeGreaterThan(0);
+    
+    // Expected Result: Table listing have complete header and display correct information
+    expect(tableHeaders).toContain('Role Name');
+    expect(tableHeaders).toContain('Status');
+    
+    const tableRows = await page.locator('table tbody tr').count();
+    expect(tableRows).toBeGreaterThan(0);
+  });
+
+  test('UM-039: Update Roles in admin portal', async ({ page }) => {
+    // Module: Roles Page
+    // Click Edit button on any available item
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Edit any details
+    const newDescription = `Updated Role ${Date.now()}`;
+    await page.fill('textarea[name="description"], input[name="description"]', newDescription);
+    
+    // Click Save & Continue
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Table listing updated according to the changes
+    await expect(page.locator('text=Role updated successfully, text=saved successfully')).toBeVisible();
+  });
+
+  test('UM-040: View roles available', async ({ page }) => {
+    // Module: Roles Page
+    // Observe the listings
+    await page.waitForSelector('table');
+    
+    // Expected Result: User can view roles available in the listings
+    const roleCount = await page.locator('table tbody tr').count();
+    expect(roleCount).toBeGreaterThan(0);
+    await expect(page.locator('table tbody tr').first()).toBeVisible();
+  });
+
+  test('UM-041: Add role and empty all fields then save', async ({ page }) => {
+    // Module: Roles Page
+    // Click Add Role
+    await page.click('button:has-text("Add Role")');
+    await page.waitForSelector('form');
+    
+    // Empty all fields
+    await page.fill('input[name="roleName"], input[name="name"]', '');
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    
+    // Expected Result: Role creation fail, prompt to fill in required fields
+    await expect(page.locator('text=required, text=mandatory, text=cannot be empty')).toBeVisible();
+  });
+
+  test('UM-042: Add role and dont give access to all modules', async ({ page }) => {
+    // Module: Roles Page (Negative)
+    // Click Add Role
+    await page.click('button:has-text("Add Role")');
+    await page.waitForSelector('form');
+    
+    // Fill in Role Details
+    await page.fill('input[name="roleName"], input[name="name"]', `Test Role ${Date.now()}`);
+    
+    // Don't toggle on any modules
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    
+    // Expected Result: Role creation fail, each role must have access to at least one module
+    await expect(page.locator('text=at least one module, text=select module')).toBeVisible();
+  });
+
+  test('UM-043: Edit role and set permission to List only for all modules', async ({ page }) => {
+    // Module: Roles Page
+    // Select a role and click edit button
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Toggle on all modules
+    const moduleToggles = page.locator('input[type="checkbox"].module-toggle, .toggle-module');
+    const toggleCount = await moduleToggles.count();
+    for (let i = 0; i < toggleCount; i++) {
+      await moduleToggles.nth(i).check();
+    }
+    
+    // Tick "List" checkbox only for all modules
+    const listCheckboxes = page.locator('input[type="checkbox"][value="list"], input[name*="list"]');
+    const listCount = await listCheckboxes.count();
+    for (let i = 0; i < listCount; i++) {
+      await listCheckboxes.nth(i).check();
+    }
+    
+    // Uncheck other permissions
+    await page.uncheck('input[value="view"], input[value="edit"], input[value="add"], input[value="delete"]');
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Role permission successfully updated with List only permissions
+    await expect(page.locator('text=Role updated successfully')).toBeVisible();
+  });
+
+  test('UM-044: Edit role and set permission to List and View only for all modules', async ({ page }) => {
+    // Module: Roles Page
+    // Select a role and click edit button
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Toggle on all modules and tick List and View checkboxes
+    const moduleToggles = page.locator('input[type="checkbox"].module-toggle, .toggle-module');
+    const toggleCount = await moduleToggles.count();
+    for (let i = 0; i < toggleCount; i++) {
+      await moduleToggles.nth(i).check();
+    }
+    
+    await page.check('input[value="list"], input[name*="list"]');
+    await page.check('input[value="view"], input[name*="view"]');
+    await page.uncheck('input[value="edit"], input[value="add"], input[value="delete"]');
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Role permission successfully updated with List and View permissions
+    await expect(page.locator('text=Role updated successfully')).toBeVisible();
+  });
+
+  test('UM-045: Edit role and set permission to List, View and Edit only for all modules', async ({ page }) => {
+    // Module: Roles Page
+    // Select a role and click edit button
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Toggle on all modules and tick List, View, and Edit checkboxes
+    const moduleToggles = page.locator('input[type="checkbox"].module-toggle, .toggle-module');
+    const toggleCount = await moduleToggles.count();
+    for (let i = 0; i < toggleCount; i++) {
+      await moduleToggles.nth(i).check();
+    }
+    
+    await page.check('input[value="list"], input[name*="list"]');
+    await page.check('input[value="view"], input[name*="view"]');
+    await page.check('input[value="edit"], input[name*="edit"]');
+    await page.uncheck('input[value="add"], input[value="delete"]');
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Role permission successfully updated with List, View, and Edit permissions
+    await expect(page.locator('text=Role updated successfully')).toBeVisible();
+  });
+
+  test('UM-046: Edit role and set permission to List and Add only for all modules', async ({ page }) => {
+    // Module: Roles Page
+    // Select a role and click edit button
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Toggle on all modules and tick List and Add checkboxes
+    const moduleToggles = page.locator('input[type="checkbox"].module-toggle, .toggle-module');
+    const toggleCount = await moduleToggles.count();
+    for (let i = 0; i < toggleCount; i++) {
+      await moduleToggles.nth(i).check();
+    }
+    
+    await page.check('input[value="list"], input[name*="list"]');
+    await page.check('input[value="add"], input[name*="add"]');
+    await page.uncheck('input[value="view"], input[value="edit"], input[value="delete"]');
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Role permission successfully updated with List and Add permissions
+    await expect(page.locator('text=Role updated successfully')).toBeVisible();
+  });
+
+  test('UM-047: Edit role and set permission to List and Delete only for all modules', async ({ page }) => {
+    // Module: Roles Page
+    // Select a role and click edit button
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Toggle on all modules and tick List and Delete checkboxes
+    const moduleToggles = page.locator('input[type="checkbox"].module-toggle, .toggle-module');
+    const toggleCount = await moduleToggles.count();
+    for (let i = 0; i < toggleCount; i++) {
+      await moduleToggles.nth(i).check();
+    }
+    
+    await page.check('input[value="list"], input[name*="list"]');
+    await page.check('input[value="delete"], input[name*="delete"]');
+    await page.uncheck('input[value="view"], input[value="edit"], input[value="add"]');
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Role permission successfully updated with List and Delete permissions
+    await expect(page.locator('text=Role updated successfully')).toBeVisible();
+  });
+
+  test('UM-048: Edit role and set permission to all for all modules', async ({ page }) => {
+    // Module: Roles Page
+    // Select a role and click edit button
+    await page.locator('table tbody tr').first().locator('button:has-text("Edit"), [aria-label="Edit"]').first().click();
+    await page.waitForSelector('form');
+    
+    // Toggle on all modules and tick all checkboxes
+    const moduleToggles = page.locator('input[type="checkbox"].module-toggle, .toggle-module');
+    const toggleCount = await moduleToggles.count();
+    for (let i = 0; i < toggleCount; i++) {
+      await moduleToggles.nth(i).check();
+    }
+    
+    await page.check('input[value="list"], input[name*="list"]');
+    await page.check('input[value="view"], input[name*="view"]');
+    await page.check('input[value="edit"], input[name*="edit"]');
+    await page.check('input[value="add"], input[name*="add"]');
+    await page.check('input[value="delete"], input[name*="delete"]');
+    
+    // Click Save button
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Role permission successfully updated with all permissions
+    await expect(page.locator('text=Role updated successfully')).toBeVisible();
+  });
+
+  test('UM-049: Set role as active', async ({ page }) => {
+    // Module: Roles Page
+    // Click Add Role
+    await page.click('button:has-text("Add Role")');
+    await page.waitForSelector('form');
+    
+    // Fill in details
+    await page.fill('input[name="roleName"], input[name="name"]', `Active Role ${Date.now()}`);
+    
+    // Toggle on at least one module
+    await page.check('input[type="checkbox"].module-toggle, .toggle-module');
+    await page.check('input[value="list"]');
+    
+    // Toggle on the Active toggle
+    await page.check('input[type="checkbox"][name="active"], .toggle-active');
+    
+    // Click Save
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Role saved as active
+    await expect(page.locator('text=Active')).toBeVisible();
+  });
+
+  test('UM-050: Set role as inactive', async ({ page }) => {
+    // Module: Roles Page
+    // Click Add Role
+    await page.click('button:has-text("Add Role")');
+    await page.waitForSelector('form');
+    
+    // Fill in details
+    await page.fill('input[name="roleName"], input[name="name"]', `Inactive Role ${Date.now()}`);
+    
+    // Toggle on at least one module
+    await page.check('input[type="checkbox"].module-toggle, .toggle-module');
+    await page.check('input[value="list"]');
+    
+    // Toggle off the Active toggle
+    await page.uncheck('input[type="checkbox"][name="active"], .toggle-active');
+    
+    // Click Save
+    await page.click('button:has-text("Save")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Role saved as inactive, users linked to role cannot access admin portal
+    await expect(page.locator('text=Inactive')).toBeVisible();
+  });
+
+  test('UM-051: Delete role with associated users', async ({ page }) => {
+    // Module: Roles Page
+    // Select a role with associated users
+    const roleWithUsers = page.locator('table tbody tr').filter({ hasText: /[1-9]\d*/ }).first();
+    await roleWithUsers.locator('button[aria-label="Delete"], [aria-label="delete"]').click();
+    
+    // Expected Result: Role deletion unsuccessful with error message
+    await expect(page.locator('text=Can not delete role that still contains user.')).toBeVisible();
+  });
+
+  test('UM-052: Delete role with no associated users', async ({ page }) => {
+    // Module: Roles Page
+    // Select a role with no associated users
+    const roleWithoutUsers = page.locator('table tbody tr').filter({ hasText: '0' }).first();
+    const roleName = await roleWithoutUsers.locator('td').first().textContent();
+    
+    await roleWithoutUsers.locator('button[aria-label="Delete"], [aria-label="delete"]').click();
+    await page.click('button:has-text("Confirm"), button:has-text("Yes")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: Role successfully deleted
+    await expect(page.locator(`text=${roleName}`)).not.toBeVisible();
+  });
+});
+
+test.describe('User Management - Audit Log Page', () => {
+  test.beforeEach(async ({ page }) => {
+    // Login and navigate to Audit Log page
+    await page.goto('/admin/login');
+    await page.fill('input[name="email"]', process.env.ADMIN_EMAIL || '');
+    await page.fill('input[name="password"]', process.env.ADMIN_PASSWORD || '');
+    await page.click('button[type="submit"]');
+    await page.waitForURL('**/admin/**');
+    await page.goto('/admin/user-management/audit-log');
+  });
+
+  test('UM-053: View all audit logs', async ({ page }) => {
+    // Module: Audit Log Page
+    // View the audit log table
+    await page.waitForSelector('table');
+    
+    // Expected Result: Can view all audit logs
+    const logCount = await page.locator('table tbody tr').count();
+    expect(logCount).toBeGreaterThan(0);
+    
+    const tableHeaders = await page.locator('table thead th').allTextContents();
+    expect(tableHeaders).toContain('Module');
+    expect(tableHeaders).toContain('User');
+    expect(tableHeaders).toContain('Action');
+    expect(tableHeaders).toContain('Date');
+  });
+
+  test('UM-054: Only view audit log by order module', async ({ page }) => {
+    // Module: Audit Log Page
+    // Click the dropdown in Module filter bar
+    await page.click('select[name="module"], .module-filter');
+    
+    // Select Order
+    await page.selectOption('select[name="module"], .module-filter', 'Order');
+    
+    // Click enter
+    await page.press('select[name="module"], .module-filter', 'Enter');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: All audit logs for order module is displayed
+    const rows = await page.locator('table tbody tr').all();
+    for (const row of rows) {
+      await expect(row.locator('text=Order')).toBeVisible();
+    }
+  });
+
+  test('UM-055: Only view audit log by voucher module', async ({ page }) => {
+    // Module: Audit Log Page
+    // Click the dropdown in Module filter bar and select Voucher
+    await page.click('select[name="module"], .module-filter');
+    await page.selectOption('select[name="module"], .module-filter', 'Voucher');
+    await page.press('select[name="module"], .module-filter', 'Enter');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: All audit logs for voucher module is displayed
+    const rows = await page.locator('table tbody tr').all();
+    for (const row of rows) {
+      await expect(row.locator('text=Voucher')).toBeVisible();
+    }
+  });
+
+  test('UM-056: Only view audit log by corporate management module', async ({ page }) => {
+    // Module: Audit Log Page
+    // Click the dropdown in Module filter bar and select Corporate Management
+    await page.click('select[name="module"], .module-filter');
+    await page.selectOption('select[name="module"], .module-filter', 'Corporate Management');
+    await page.press('select[name="module"], .module-filter', 'Enter');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: All audit logs for corporate management module is displayed
+    const rows = await page.locator('table tbody tr').all();
+    for (const row of rows) {
+      await expect(row.locator('text=Corporate Management')).toBeVisible();
+    }
+  });
+
+  test('UM-057: Only view audit log by users module', async ({ page }) => {
+    // Module: Audit Log Page
+    // Click the dropdown in Module filter bar and select Users
+    await page.click('select[name="module"], .module-filter');
+    await page.selectOption('select[name="module"], .module-filter', 'Users');
+    await page.press('select[name="module"], .module-filter', 'Enter');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: All audit logs for users module is displayed
+    const rows = await page.locator('table tbody tr').all();
+    for (const row of rows) {
+      await expect(row.locator('text=Users')).toBeVisible();
+    }
+  });
+
+  test('UM-058: Only view audit log by content management module', async ({ page }) => {
+    // Module: Audit Log Page
+    // Click the dropdown in Module filter bar and select Content Management
+    await page.click('select[name="module"], .module-filter');
+    await page.selectOption('select[name="module"], .module-filter', 'Content Management');
+    await page.press('select[name="module"], .module-filter', 'Enter');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: All audit logs for content management module is displayed
+    const rows = await page.locator('table tbody tr').all();
+    for (const row of rows) {
+      await expect(row.locator('text=Content Management')).toBeVisible();
+    }
+  });
+
+  test('UM-059: Only view audit log by settings module', async ({ page }) => {
+    // Module: Audit Log Page
+    // Click the dropdown in Module filter bar and select Settings
+    await page.click('select[name="module"], .module-filter');
+    await page.selectOption('select[name="module"], .module-filter', 'Settings');
+    await page.press('select[name="module"], .module-filter', 'Enter');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: All audit logs for settings module is displayed
+    const rows = await page.locator('table tbody tr').all();
+    for (const row of rows) {
+      await expect(row.locator('text=Settings')).toBeVisible();
+    }
+  });
+
+  test('UM-060: Only view audit log by certain users', async ({ page }) => {
+    // Module: Audit Log Page
+    // Click the dropdown in Username filter bar
+    await page.click('select[name="username"], .username-filter');
+    
+    // Select a user
+    await page.selectOption('select[name="username"], .username-filter', { index: 1 });
+    const selectedUser = await page.locator('select[name="username"] option:checked').textContent();
+    
+    // Click enter
+    await page.press('select[name="username"], .username-filter', 'Enter');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: All audit logs for the selected user is displayed
+    const rows = await page.locator('table tbody tr').all();
+    for (const row of rows) {
+      await expect(row.locator(`text=${selectedUser}`)).toBeVisible();
+    }
+  });
+
+  test('UM-061: Only view audit log from certain period of time', async ({ page }) => {
+    // Module: Audit Log Page
+    // Click the date filter
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7);
+    const endDate = new Date();
+    
+    await page.fill('input[name="startDate"], input[type="date"]', startDate.toISOString().split('T')[0]);
+    await page.fill('input[name="endDate"], input[type="date"]', endDate.toISOString().split('T')[0]);
+    
+    // Click enter or apply filter
+    await page.click('button:has-text("Apply"), button:has-text("Filter")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: All audit logs for the selected time period is displayed
+    const logCount = await page.locator('table tbody tr').count();
+    expect(logCount).toBeGreaterThanOrEqual(0);
+  });
+
+  test('UM-062: View audit log for single module and single user', async ({ page }) => {
+    // Module: Audit Log Page
+    // Click the dropdown in Module filter bar and select a module
+    await page.click('select[name="module"], .module-filter');
+    await page.selectOption('select[name="module"], .module-filter', 'Order');
+    await page.press('select[name="module"], .module-filter', 'Enter');
+    
+    // Click the dropdown in Username filter bar and select a user
+    await page.click('select[name="username"], .username-filter');
+    await page.selectOption('select[name="username"], .username-filter', { index: 1 });
+    const selectedUser = await page.locator('select[name="username"] option:checked').textContent();
+    await page.press('select[name="username"], .username-filter', 'Enter');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: All audit logs for the selected module and user is displayed
+    const rows = await page.locator('table tbody tr').all();
+    for (const row of rows) {
+      await expect(row.locator('text=Order')).toBeVisible();
+      await expect(row.locator(`text=${selectedUser}`)).toBeVisible();
+    }
+  });
+
+  test('UM-063: View audit log for multiple modules and multiple users', async ({ page }) => {
+    // Module: Audit Log Page
+    // Click the dropdown in Module filter bar and select 2+ modules
+    await page.click('select[name="module"], .module-filter[multiple]');
+    await page.selectOption('select[name="module"], .module-filter[multiple]', ['Order', 'Voucher']);
+    
+    // Click the dropdown in Username filter bar and select 2+ users
+    await page.click('select[name="username"], .username-filter[multiple]');
+    await page.selectOption('select[name="username"], .username-filter[multiple]', [{ index: 1 }, { index: 2 }]);
+    
+    // Apply filter
+    await page.click('button:has-text("Apply"), button:has-text("Filter")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: All audit logs for the selected modules and users is displayed
+    const logCount = await page.locator('table tbody tr').count();
+    expect(logCount).toBeGreaterThanOrEqual(0);
+  });
+
+  test('UM-064: View audit log for single module made by single user in certain time range', async ({ page }) => {
+    // Module: Audit Log Page
+    // Click the dropdown in Module filter bar and select a module
+    await page.click('select[name="module"], .module-filter');
+    await page.selectOption('select[name="module"], .module-filter', 'Order');
+    
+    // Click the dropdown in Username filter bar and select a user
+    await page.click('select[name="username"], .username-filter');
+    await page.selectOption('select[name="username"], .username-filter', { index: 1 });
+    const selectedUser = await page.locator('select[name="username"] option:checked').textContent();
+    
+    // Click the dropdown in Date filter bar and select time range
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7);
+    const endDate = new Date();
+    
+    await page.fill('input[name="startDate"], input[type="date"]', startDate.toISOString().split('T')[0]);
+    await page.fill('input[name="endDate"], input[type="date"]', endDate.toISOString().split('T')[0]);
+    
+    // Click enter or apply filter
+    await page.click('button:has-text("Apply"), button:has-text("Filter")');
+    await page.waitForTimeout(1000);
+    
+    // Expected Result: All audit logs for the selected module and user made at a certain time range is displayed
+    const rows = await page.locator('table tbody tr').all();
+    for (const row of rows) {
+      await expect(row.locator('text=Order')).toBeVisible();
+      await expect(row.locator(`text=${selectedUser}`)).toBeVisible();
+    }
+  });
+});

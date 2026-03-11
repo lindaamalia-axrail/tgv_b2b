@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Test Results
+test-results/
+playwright-report/
+screenshots/
+.auth/
+
+# Playwright
+.playwright/
+playwright/.cache/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Coverage
+coverage/
+.nyc_output/
