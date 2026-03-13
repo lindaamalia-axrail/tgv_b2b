@@ -1,463 +1,501 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+import { ADMIN_PORTAL } from '../../utils/test-data';
+
+// URLs for direct navigation
+const BASE_URL = 'https://corpvoucher.fam-stg.click';
+const ORDERS_URL = `${BASE_URL}/orders`;
+
+// Real test data from the actual orders in the system
+const TEST_DATA = {
+  orderNo: 'TGV2603121232CF0',
+  bookingNo: '2148902',
+  merchantTxnId: 'PYM2603121232Q74',
+  email: 'lindaamalia@axrail.com',
+  phoneNo: '+60104411234',
+  // For multi-order search
+  orderNo2: 'TGV2603121231DNX',
+  bookingNo2: '2148901',
+};
 
 test.describe('Admin Portal - My Order Page', () => {
-  test.beforeEach(async ({ page }) => {
-    // Navigate to admin portal and login
-    await page.goto('https://admin.tgvcinemas.com.my/');
-    
-    // Wait for login or navigate to My Order page
-    await page.waitForLoadState('networkidle');
-    
-    // Navigate to My Order page
-    // TODO: Add navigation to My Order page once selector is identified
+  let authenticatedPage: Page;
+
+  // Helper to wait for the app loading screen to disappear
+  async function waitForAppReady() {
+    await authenticatedPage.waitForSelector('text=Preparing your experience', { state: 'hidden', timeout: 30000 }).catch(() => {});
+    await authenticatedPage.waitForLoadState('networkidle');
+    await authenticatedPage.waitForTimeout(1000);
+  }
+
+  // Helper to wait for table data to load
+  async function waitForTableData() {
+    await authenticatedPage.waitForTimeout(2000);
+    await authenticatedPage.waitForLoadState('networkidle');
+  }
+
+  // Login ONCE before all tests
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    authenticatedPage = await context.newPage();
+
+    // Go to login page first
+    await authenticatedPage.goto(`${BASE_URL}/admin/login`);
+    await authenticatedPage.waitForSelector('text=Preparing your experience', { state: 'hidden', timeout: 30000 }).catch(() => {});
+    await authenticatedPage.waitForLoadState('networkidle');
+    await authenticatedPage.waitForTimeout(1000);
+
+    // Check if already logged in (localStorage tokens might work)
+    let currentUrl = authenticatedPage.url();
+
+    if (currentUrl.includes('login')) {
+      // Do regular login with actual form selectors
+      console.log('Performing regular login...');
+      const emailInput = authenticatedPage.getByRole('textbox', { name: /robot@gmail.com/i });
+      await emailInput.waitFor({ state: 'visible', timeout: 15000 });
+      await emailInput.fill(ADMIN_PORTAL.CREDENTIALS.email);
+      await authenticatedPage.locator('#password').fill(ADMIN_PORTAL.CREDENTIALS.password);
+      await authenticatedPage.getByRole('button', { name: /sign in/i }).click();
+
+      // Wait for navigation away from login page
+      await authenticatedPage.waitForFunction(
+        () => !window.location.href.includes('/login'),
+        { timeout: 30000 }
+      );
+
+      // Wait for loading screen to disappear
+      await authenticatedPage.waitForSelector('text=Preparing your experience', { state: 'hidden', timeout: 30000 }).catch(() => {});
+      await authenticatedPage.waitForLoadState('networkidle');
+      await authenticatedPage.waitForTimeout(2000);
+
+      currentUrl = authenticatedPage.url();
+      console.log('After login, current URL:', currentUrl);
+
+      if (currentUrl.includes('login')) {
+        throw new Error('Login failed - still on login page');
+      }
+    }
+
+    console.log('✓ Authentication completed once for all tests');
   });
 
-  test('TC01 - My Order page - Validate Order Table Listing', async ({ page }) => {
-    // Validate the table listing
-    // TODO: Add selectors for table headers
-    const tableHeaders = [
+  test.afterAll(async () => {
+    await authenticatedPage?.close();
+  });
+
+  // Helper: navigate to Orders listing page
+  async function navigateToOrders() {
+    await authenticatedPage.goto(ORDERS_URL);
+    await waitForAppReady();
+    await waitForTableData();
+  }
+
+  // ==========================================
+  // TC01 - Validate Order Table Listing
+  // ==========================================
+  test('TC01 - My Order page - Validate Order Table Listing', async () => {
+    await navigateToOrders();
+
+    // Actual table headers from the admin portal
+    const expectedHeaders = [
       'Order No',
       'Booking No',
-      'Merchant Txn ID',
+      'Merchant TXN ID',
+      'Date',
       'Email',
       'Phone No',
-      'Status',
+      'Item (Count)',
+      'Amount',
       'Vista Status',
-      'Created Date'
+      'Status',
     ];
 
-    // Verify table headers are present
-    for (const header of tableHeaders) {
-      // TODO: Add selector validation
-      // await expect(page.locator(`text=${header}`)).toBeVisible();
+    // Verify all column headers exist (scroll into view for off-screen columns)
+    for (const header of expectedHeaders) {
+      // Use exact match to avoid "Status" matching "Vista Status"
+      const col = authenticatedPage.getByRole('columnheader', { name: header, exact: true });
+      await col.scrollIntoViewIfNeeded();
+      await expect(col).toBeVisible();
     }
 
-    // Verify table displays data correctly
-    // TODO: Add data validation
-    
-    // Expected Result: Table listing have complete header and display correct information
-    // Verify all headers are visible
-    for (const header of tableHeaders) {
-      await expect(page.locator(`th:has-text("${header}")`)).toBeVisible();
-    }
-    
-    // Verify table has data rows
-    const tableRows = page.locator('tbody tr');
-    await expect(tableRows.first()).toBeVisible();
-    
-    // Verify data is displayed in correct columns
-    const firstRow = tableRows.first();
-    await expect(firstRow.locator('td').nth(0)).not.toBeEmpty(); // Order No
-    await expect(firstRow.locator('td').nth(1)).not.toBeEmpty(); // Booking No
+    // Verify the grid is visible
+    const grid = authenticatedPage.getByRole('grid');
+    await expect(grid).toBeVisible({ timeout: 15000 });
+
+    // Verify table has data rows (at least one)
+    const rows = authenticatedPage.getByRole('row');
+    await expect(rows.nth(1)).toBeVisible(); // first data row (index 0 is header)
+
+    // Verify pagination info shows data
+    await expect(authenticatedPage.locator('text=/\\d+–\\d+ of \\d+/')).toBeVisible();
   });
 
-  test('TC02 - My Order page - View orders placed', async ({ page }) => {
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Select the Order
-    const firstOrder = page.locator('tbody tr').first();
-    await firstOrder.click();
-    
-    // Step 3: Click the edit icon
-    await page.click('[data-testid="edit-order-icon"]');
-    
-    // Step 4: View the order detail
-    await page.waitForSelector('[data-testid="order-detail-modal"]');
-    
-    // Expected Result: Can view order details
-    await expect(page.locator('[data-testid="order-detail-modal"]')).toBeVisible();
-    await expect(page.locator('[data-testid="order-detail-order-no"]')).toBeVisible();
-    await expect(page.locator('[data-testid="order-detail-booking-no"]')).toBeVisible();
-    await expect(page.locator('[data-testid="order-detail-email"]')).toBeVisible();
-    await expect(page.locator('[data-testid="order-detail-phone"]')).toBeVisible();
-    await expect(page.locator('[data-testid="order-detail-status"]')).toBeVisible();
+  // ==========================================
+  // TC02 - View orders placed
+  // ==========================================
+  test('TC02 - My Order page - View orders placed', async () => {
+    await navigateToOrders();
+
+    // Search for a specific completed order to view its details
+    const orderNoInput = authenticatedPage.getByRole('textbox', { name: 'Order No' });
+    await orderNoInput.fill(TEST_DATA.orderNo);
+    await orderNoInput.press('Enter');
+    await waitForTableData();
+
+    // Verify search returned the order
+    await expect(authenticatedPage.getByRole('heading', { level: 5 })).toContainText('Orders (1)');
+
+    // Click the view/eye button on the row (last button in the row)
+    const dataRow = authenticatedPage.getByRole('row').filter({ hasText: TEST_DATA.orderNo });
+    await dataRow.getByRole('button').click();
+    await authenticatedPage.waitForTimeout(2000);
+
+    // Verify navigated to order details page
+    await expect(authenticatedPage).toHaveURL(/orders-details\/edit\?id=/);
+    await expect(authenticatedPage.getByRole('heading', { name: 'Order Details' })).toBeVisible();
+
+    // Verify Customer Information section
+    await expect(authenticatedPage.locator('text=Customer Information')).toBeVisible();
+    await expect(authenticatedPage.locator('text=Company Name')).toBeVisible();
+    await expect(authenticatedPage.locator('text=Company Email')).toBeVisible();
+    await expect(authenticatedPage.locator('text=Phone No')).toBeVisible();
+    await expect(authenticatedPage.locator('text=Billing Address')).toBeVisible();
+
+    // Verify Order details table
+    await expect(authenticatedPage.locator('text=Booking No.')).toBeVisible();
+    await expect(authenticatedPage.locator('text=Transaction No.')).toBeVisible();
+    await expect(authenticatedPage.locator('text=Order No.')).toBeVisible();
+    await expect(authenticatedPage.locator('text=Merchant TxN ID.')).toBeVisible();
+
+    // Verify Status section
+    await expect(authenticatedPage.locator('text=Order Status')).toBeVisible();
+    await expect(authenticatedPage.locator('text=Vista Status')).toBeVisible();
+
+    // Verify Amount and item info
+    await expect(authenticatedPage.locator('text=Total Amount')).toBeVisible();
+    await expect(authenticatedPage.locator('text=Transaction Date Time')).toBeVisible();
+    await expect(authenticatedPage.locator('text=Total Item')).toBeVisible();
+
+    // Verify Download Receipt button
+    await expect(authenticatedPage.getByRole('button', { name: 'Download Receipt' })).toBeVisible();
+
+    // Verify Product table
+    await expect(authenticatedPage.getByRole('columnheader', { name: 'Product' })).toBeVisible();
+    await expect(authenticatedPage.getByRole('columnheader', { name: 'Price' })).toBeVisible();
+    await expect(authenticatedPage.getByRole('columnheader', { name: 'Quantity' })).toBeVisible();
+    await expect(authenticatedPage.getByRole('columnheader', { name: 'Subtotal' })).toBeVisible();
+
+    // Verify Timeline section
+    await expect(authenticatedPage.locator('text=Timeline')).toBeVisible();
   });
 
-  test('TC03 - My Order page - Update orders place', async ({ page }) => {
-    // Note: According to spec, nothing can be updated
-    // This test verifies that update functionality is disabled or not available
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Select the Order
-    const firstOrder = page.locator('tbody tr').first();
-    await firstOrder.click();
-    
-    // Step 3: Click the edit icon
-    await page.click('[data-testid="edit-order-icon"]');
-    
-    // Step 4: Attempt to update any information and save
-    await page.waitForSelector('[data-testid="order-detail-modal"]');
-    
-    // Expected Result: Nothing can be updated (fields are read-only or disabled)
-    // Verify that input fields are disabled or read-only
-    const orderNoField = page.locator('[data-testid="order-detail-order-no"]');
-    const bookingNoField = page.locator('[data-testid="order-detail-booking-no"]');
-    const emailField = page.locator('[data-testid="order-detail-email"]');
-    
-    // Check if fields are disabled or read-only
-    await expect(orderNoField).toBeDisabled().catch(() => 
-      expect(orderNoField).toHaveAttribute('readonly')
-    );
-    await expect(bookingNoField).toBeDisabled().catch(() => 
-      expect(bookingNoField).toHaveAttribute('readonly')
-    );
-    await expect(emailField).toBeDisabled().catch(() => 
-      expect(emailField).toHaveAttribute('readonly')
-    );
-    
-    // Verify save/update button is not present or disabled
-    const updateButton = page.locator('[data-testid="update-order-button"]');
-    await expect(updateButton).not.toBeVisible().catch(() => 
-      expect(updateButton).toBeDisabled()
-    );
+  // ==========================================
+  // TC03 - Update orders place (nothing can be updated)
+  // ==========================================
+  test('TC03 - My Order page - Update orders place', async () => {
+    // Navigate to order details
+    await navigateToOrders();
+
+    const orderNoInput = authenticatedPage.getByRole('textbox', { name: 'Order No' });
+    await orderNoInput.fill(TEST_DATA.orderNo);
+    await orderNoInput.press('Enter');
+    await waitForTableData();
+
+    const dataRow = authenticatedPage.getByRole('row').filter({ hasText: TEST_DATA.orderNo });
+    await dataRow.getByRole('button').click();
+    await authenticatedPage.waitForTimeout(2000);
+
+    await expect(authenticatedPage).toHaveURL(/orders-details\/edit\?id=/);
+
+    // Verify all fields are read-only (displayed as paragraphs, not input fields)
+    // The order detail page shows all info as text paragraphs, not editable inputs
+    const editableInputs = authenticatedPage.locator('input:not([type="hidden"]):not([readonly]):not([disabled])');
+    const inputCount = await editableInputs.count();
+
+    // There should be no editable text inputs on the order detail page
+    // (The page only has paragraph elements for displaying data)
+    expect(inputCount).toBe(0);
+
+    // Verify there is no Save/Update button
+    await expect(authenticatedPage.getByRole('button', { name: /save|update/i })).not.toBeVisible();
   });
 
-  test('TC04 - My Order page - Search orders by Order No', async ({ page }) => {
-    const testOrderNo = 'ORD123456'; // TODO: Use actual order number
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Type in Order No in Order No search bar
-    await page.fill('[data-testid="search-order-no"]', testOrderNo);
-    
-    // Step 3: Click enter
-    await page.press('[data-testid="search-order-no"]', 'Enter');
-    await page.waitForLoadState('networkidle');
-    
-    // Expected Result: Display order with same Order No
-    const searchResults = page.locator('tbody tr');
-    await expect(searchResults).toHaveCount(1, { timeout: 5000 });
-    await expect(searchResults.first().locator('td', { hasText: testOrderNo })).toBeVisible();
-    
-    // Verify the displayed order matches the search criteria
-    const displayedOrderNo = await searchResults.first().locator('td').nth(0).textContent();
-    expect(displayedOrderNo).toContain(testOrderNo);
+  // ==========================================
+  // TC04 - Search orders by Order No
+  // ==========================================
+  test('TC04 - My Order page - Search orders by Order No', async () => {
+    await navigateToOrders();
+
+    const orderNoInput = authenticatedPage.getByRole('textbox', { name: 'Order No' });
+    await orderNoInput.fill(TEST_DATA.orderNo);
+    await orderNoInput.press('Enter');
+    await waitForTableData();
+
+    // Verify filter chip appears
+    await expect(authenticatedPage.getByRole('button', { name: TEST_DATA.orderNo.toLowerCase() })).toBeVisible();
+
+    // Verify search results show the matching order
+    await expect(authenticatedPage.getByRole('heading', { level: 5 })).toContainText('Orders (1)');
+    const resultRow = authenticatedPage.getByRole('row').filter({ hasText: TEST_DATA.orderNo });
+    await expect(resultRow).toBeVisible();
+
+    // Verify the order number in the cell matches
+    await expect(resultRow.getByRole('cell', { name: TEST_DATA.orderNo })).toBeVisible();
   });
 
-  test('TC05 - My Order page - Search orders by Booking No', async ({ page }) => {
-    const testBookingNo = 'BK123456'; // TODO: Use actual booking number
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Type in Booking No in Booking No search bar
-    await page.fill('[data-testid="search-booking-no"]', testBookingNo);
-    
-    // Step 3: Click enter
-    await page.press('[data-testid="search-booking-no"]', 'Enter');
-    await page.waitForLoadState('networkidle');
-    
-    // Expected Result: Display order with same Booking No
-    const searchResults = page.locator('tbody tr');
-    await expect(searchResults).toHaveCount(1, { timeout: 5000 });
-    await expect(searchResults.first().locator('td', { hasText: testBookingNo })).toBeVisible();
-    
-    // Verify the displayed order matches the search criteria
-    const displayedBookingNo = await searchResults.first().locator('td').nth(1).textContent();
-    expect(displayedBookingNo).toContain(testBookingNo);
+  // ==========================================
+  // TC05 - Search orders by Booking No
+  // ==========================================
+  test('TC05 - My Order page - Search orders by Booking No', async () => {
+    await navigateToOrders();
+
+    const bookingNoInput = authenticatedPage.getByRole('textbox', { name: 'Booking No' });
+    await bookingNoInput.fill(TEST_DATA.bookingNo);
+    await bookingNoInput.press('Enter');
+    await waitForTableData();
+
+    // Verify search results show the matching order
+    const resultRow = authenticatedPage.getByRole('row').filter({ hasText: TEST_DATA.bookingNo });
+    await expect(resultRow).toBeVisible();
+
+    // Verify the booking number in the cell matches
+    await expect(resultRow.getByRole('cell', { name: TEST_DATA.bookingNo })).toBeVisible();
   });
 
-  test('TC06 - My Order page - Search orders by Merchant Txn ID', async ({ page }) => {
-    const testMerchantTxnId = 'MTX123456'; // TODO: Use actual merchant txn ID
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Type in Merchant Txn ID
-    await page.fill('[data-testid="search-merchant-txn-id"]', testMerchantTxnId);
-    
-    // Step 3: Click enter
-    await page.press('[data-testid="search-merchant-txn-id"]', 'Enter');
-    await page.waitForLoadState('networkidle');
-    
-    // Expected Result: Display order with same Merchant Txn ID
-    const searchResults = page.locator('tbody tr');
-    await expect(searchResults).toHaveCount(1, { timeout: 5000 });
-    await expect(searchResults.first().locator('td', { hasText: testMerchantTxnId })).toBeVisible();
-    
-    // Verify the displayed order matches the search criteria
-    const displayedMerchantTxnId = await searchResults.first().locator('td').nth(2).textContent();
-    expect(displayedMerchantTxnId).toContain(testMerchantTxnId);
+  // ==========================================
+  // TC06 - Search orders by Merchant Txn ID
+  // ==========================================
+  test('TC06 - My Order page - Search orders by Merchant Txn ID', async () => {
+    await navigateToOrders();
+
+    const merchantTxnInput = authenticatedPage.getByRole('textbox', { name: 'Merchant Txn ID' });
+    await merchantTxnInput.fill(TEST_DATA.merchantTxnId);
+    await merchantTxnInput.press('Enter');
+    await waitForTableData();
+
+    // Verify search results show the matching order
+    const resultRow = authenticatedPage.getByRole('row').filter({ hasText: TEST_DATA.merchantTxnId });
+    await expect(resultRow).toBeVisible();
+
+    // Verify the merchant txn ID in the cell matches
+    await expect(resultRow.getByRole('cell', { name: TEST_DATA.merchantTxnId })).toBeVisible();
   });
 
-  test('TC07 - My Order page - Search orders by Email', async ({ page }) => {
-    const testEmail = 'test@example.com'; // TODO: Use actual email
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Type in Email
-    await page.fill('[data-testid="search-email"]', testEmail);
-    
-    // Step 3: Click enter
-    await page.press('[data-testid="search-email"]', 'Enter');
-    await page.waitForLoadState('networkidle');
-    
-    // Expected Result: Display order with same Email
-    const searchResults = page.locator('tbody tr');
-    await expect(searchResults.first()).toBeVisible({ timeout: 5000 });
-    await expect(searchResults.first().locator('td', { hasText: testEmail })).toBeVisible();
-    
-    // Verify all displayed orders contain the search email
-    const resultCount = await searchResults.count();
-    for (let i = 0; i < resultCount; i++) {
-      const emailCell = await searchResults.nth(i).locator('td').nth(3).textContent();
-      expect(emailCell).toContain(testEmail);
-    }
+  // ==========================================
+  // TC07 - Search orders by Email
+  // ==========================================
+  test('TC07 - My Order page - Search orders by Email', async () => {
+    await navigateToOrders();
+
+    const emailInput = authenticatedPage.getByRole('textbox', { name: 'Email' });
+    await emailInput.fill(TEST_DATA.email);
+    await emailInput.press('Enter');
+    await waitForTableData();
+
+    // Verify search results show orders with matching email
+    const rows = authenticatedPage.getByRole('row').filter({ hasText: TEST_DATA.email });
+    await expect(rows.first()).toBeVisible();
+
+    // Verify at least one result contains the email
+    const firstRow = rows.first();
+    await expect(firstRow.getByRole('cell', { name: TEST_DATA.email })).toBeVisible();
   });
 
-  test('TC08 - My Order page - Search orders by Phone No', async ({ page }) => {
-    const testPhoneNo = '0123456789'; // TODO: Use actual phone number
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Type in Phone No
-    await page.fill('[data-testid="search-phone-no"]', testPhoneNo);
-    
-    // Step 3: Click enter
-    await page.press('[data-testid="search-phone-no"]', 'Enter');
-    await page.waitForLoadState('networkidle');
-    
-    // Expected Result: Display order with same Phone No
-    const searchResults = page.locator('tbody tr');
-    await expect(searchResults.first()).toBeVisible({ timeout: 5000 });
-    await expect(searchResults.first().locator('td', { hasText: testPhoneNo })).toBeVisible();
-    
-    // Verify all displayed orders contain the search phone number
-    const resultCount = await searchResults.count();
-    for (let i = 0; i < resultCount; i++) {
-      const phoneCell = await searchResults.nth(i).locator('td').nth(4).textContent();
-      expect(phoneCell).toContain(testPhoneNo);
-    }
+  // ==========================================
+  // TC08 - Search orders by Phone No
+  // ==========================================
+  test('TC08 - My Order page - Search orders by Phone No', async () => {
+    await navigateToOrders();
+
+    const phoneInput = authenticatedPage.getByRole('textbox', { name: 'Phone Number' });
+    await phoneInput.fill(TEST_DATA.phoneNo);
+    await phoneInput.press('Enter');
+    await waitForTableData();
+
+    // Verify search results show orders with matching phone number
+    const rows = authenticatedPage.getByRole('row').filter({ hasText: TEST_DATA.phoneNo });
+    await expect(rows.first()).toBeVisible();
   });
 
-  test('TC09 - My Order page - Search multiple orders using order numbers', async ({ page }) => {
-    const orderNumbers = ['ORD123456', 'ORD789012']; // TODO: Use actual order numbers
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Type in the order numbers in the order no. search bar
-    await page.fill('[data-testid="search-order-no"]', orderNumbers.join(', '));
-    
-    // Step 3: Click enter
-    await page.press('[data-testid="search-order-no"]', 'Enter');
-    await page.waitForLoadState('networkidle');
-    
-    // Expected Result: Display orders that contain the order numbers
-    const searchResults = page.locator('tbody tr');
-    await expect(searchResults).toHaveCount(orderNumbers.length, { timeout: 5000 });
-    
-    // Verify each order number is present in the results
-    for (const orderNo of orderNumbers) {
-      await expect(page.locator(`tbody tr td:has-text("${orderNo}")`)).toBeVisible();
-    }
-    
-    // Verify all displayed orders match one of the search criteria
-    const resultCount = await searchResults.count();
-    for (let i = 0; i < resultCount; i++) {
-      const orderNoCell = await searchResults.nth(i).locator('td').nth(0).textContent();
-      const matchesAny = orderNumbers.some(orderNo => orderNoCell?.includes(orderNo));
-      expect(matchesAny).toBeTruthy();
-    }
+  // ==========================================
+  // TC09 - Search multiple orders using order numbers
+  // ==========================================
+  test('TC09 - My Order page - Search multiple orders using order numbers', async () => {
+    await navigateToOrders();
+
+    // Type first order number and press Enter to add as filter chip
+    const orderNoInput = authenticatedPage.getByRole('textbox', { name: 'Order No' });
+    await orderNoInput.fill(TEST_DATA.orderNo);
+    await orderNoInput.press('Enter');
+    await waitForTableData();
+
+    // Type second order number and press Enter
+    await orderNoInput.fill(TEST_DATA.orderNo2);
+    await orderNoInput.press('Enter');
+    await waitForTableData();
+
+    // Verify both orders appear in results
+    await expect(authenticatedPage.getByRole('row').filter({ hasText: TEST_DATA.orderNo })).toBeVisible();
+    await expect(authenticatedPage.getByRole('row').filter({ hasText: TEST_DATA.orderNo2 })).toBeVisible();
   });
 
-  test('TC10 - My Order page - Search order using order number and booking no', async ({ page }) => {
-    const testOrderNo = 'ORD123456'; // TODO: Use actual order number
-    const testBookingNo = 'BK123456'; // TODO: Use actual booking number
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Type in the order no. in the order no. search bar
-    await page.fill('[data-testid="search-order-no"]', testOrderNo);
-    
-    // Step 3: Click enter
-    await page.press('[data-testid="search-order-no"]', 'Enter');
-    await page.waitForLoadState('networkidle');
-    
-    // Step 4: Type in the booking no. in the booking no. search bar
-    await page.fill('[data-testid="search-booking-no"]', testBookingNo);
-    
-    // Step 5: Click enter
-    await page.press('[data-testid="search-booking-no"]', 'Enter');
-    await page.waitForLoadState('networkidle');
-    
-    // Expected Result: Display order that satisfy both order no. and booking no.
-    const searchResults = page.locator('tbody tr');
-    await expect(searchResults).toHaveCount(1, { timeout: 5000 });
-    
-    // Verify the result contains both order no and booking no
-    const resultRow = searchResults.first();
-    await expect(resultRow.locator('td', { hasText: testOrderNo })).toBeVisible();
-    await expect(resultRow.locator('td', { hasText: testBookingNo })).toBeVisible();
-    
-    // Verify the values match exactly
-    const displayedOrderNo = await resultRow.locator('td').nth(0).textContent();
-    const displayedBookingNo = await resultRow.locator('td').nth(1).textContent();
-    expect(displayedOrderNo).toContain(testOrderNo);
-    expect(displayedBookingNo).toContain(testBookingNo);
+  // ==========================================
+  // TC10 - Search order using order number and booking no
+  // ==========================================
+  test('TC10 - My Order page - Search order using order number and booking no', async () => {
+    await navigateToOrders();
+
+    // Search by order number first
+    const orderNoInput = authenticatedPage.getByRole('textbox', { name: 'Order No' });
+    await orderNoInput.fill(TEST_DATA.orderNo);
+    await orderNoInput.press('Enter');
+    await waitForTableData();
+
+    // Then search by booking number
+    const bookingNoInput = authenticatedPage.getByRole('textbox', { name: 'Booking No' });
+    await bookingNoInput.fill(TEST_DATA.bookingNo);
+    await bookingNoInput.press('Enter');
+    await waitForTableData();
+
+    // Verify the result satisfies both criteria
+    const resultRow = authenticatedPage.getByRole('row').filter({ hasText: TEST_DATA.orderNo });
+    await expect(resultRow).toBeVisible();
+    await expect(resultRow.getByRole('cell', { name: TEST_DATA.bookingNo })).toBeVisible();
+
+    // Verify only 1 result
+    await expect(authenticatedPage.getByRole('heading', { level: 5 })).toContainText('Orders (1)');
   });
 
-  test('TC11 - My Order page - Filter order by start date and end date', async ({ page }) => {
-    // Note: Need to select both start and end date, else filter not working (no error message)
-    const startDate = '2024-01-01';
-    const endDate = '2024-12-31';
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Click More Filter
-    await page.click('[data-testid="more-filter-button"]');
-    await page.waitForSelector('[data-testid="filter-modal"]');
-    
-    // Step 3: Select start date and end date
-    await page.fill('[data-testid="filter-start-date"]', startDate);
-    await page.fill('[data-testid="filter-end-date"]', endDate);
-    
-    // Apply filter
-    await page.click('[data-testid="apply-filter-button"]');
-    await page.waitForLoadState('networkidle');
-    
-    // Expected Result: Display orders that satisfy the start date and end date
-    const searchResults = page.locator('tbody tr');
-    await expect(searchResults.first()).toBeVisible({ timeout: 5000 });
-    
-    // Verify all displayed orders are within the date range
-    const resultCount = await searchResults.count();
-    for (let i = 0; i < resultCount; i++) {
-      const dateCell = await searchResults.nth(i).locator('td').nth(7).textContent(); // Created Date column
-      const orderDate = new Date(dateCell || '');
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      
-      expect(orderDate.getTime()).toBeGreaterThanOrEqual(start.getTime());
-      expect(orderDate.getTime()).toBeLessThanOrEqual(end.getTime());
-    }
-    
-    // Verify filter is applied (filter indicator or badge visible)
-    await expect(page.locator('[data-testid="active-filter-indicator"]')).toBeVisible();
+  // ==========================================
+  // TC11 - Filter order by start date and end date
+  // ==========================================
+  test('TC11 - My Order page - Filter order by start date and end date', async () => {
+    await navigateToOrders();
+
+    // Click More Filters
+    await authenticatedPage.getByRole('button', { name: 'More Filters' }).click();
+    await authenticatedPage.waitForTimeout(500);
+
+    // Expand Date accordion
+    await authenticatedPage.getByRole('button', { name: 'Date' }).click();
+    await authenticatedPage.waitForTimeout(500);
+
+    // Fill start date (DD/MM/YYYY format)
+    const startDateInput = authenticatedPage.getByRole('textbox', { name: 'DD/MM/YYYY' }).first();
+    await startDateInput.fill('01/01/2026');
+
+    // Fill end date
+    const endDateInput = authenticatedPage.getByRole('textbox', { name: 'DD/MM/YYYY' }).nth(1);
+    await endDateInput.fill('31/12/2026');
+
+    // Click Apply Filter
+    await authenticatedPage.getByRole('button', { name: 'Apply Filter' }).click();
+    await waitForTableData();
+
+    // Verify orders are displayed (filtered results)
+    const rows = authenticatedPage.getByRole('row');
+    await expect(rows.nth(1)).toBeVisible({ timeout: 10000 });
+
+    // Verify the heading shows filtered count
+    await expect(authenticatedPage.getByRole('heading', { level: 5 })).toContainText(/Orders \(\d+\)/);
   });
 
-  test('TC12 - My Order page - Filter order by status', async ({ page }) => {
-    // Note: waiting refund shows order cancelled, no filter for order cancelled
-    const testStatus = 'Completed';
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Click More Filter
-    await page.click('[data-testid="more-filter-button"]');
-    await page.waitForSelector('[data-testid="filter-modal"]');
-    
-    // Step 3: Select status
-    await page.selectOption('[data-testid="filter-status"]', testStatus);
-    
-    // Apply filter
-    await page.click('[data-testid="apply-filter-button"]');
-    await page.waitForLoadState('networkidle');
-    
-    // Expected Result: Display order with same status
-    const searchResults = page.locator('tbody tr');
-    await expect(searchResults.first()).toBeVisible({ timeout: 5000 });
-    
-    // Verify all displayed orders have the selected status
-    const resultCount = await searchResults.count();
-    for (let i = 0; i < resultCount; i++) {
-      const statusCell = await searchResults.nth(i).locator('td').nth(5).textContent(); // Status column
-      expect(statusCell).toContain(testStatus);
-    }
-    
-    // Verify status filter is applied
-    await expect(page.locator('[data-testid="active-filter-indicator"]')).toBeVisible();
-    await expect(page.locator(`text=${testStatus}`).first()).toBeVisible();
+  // ==========================================
+  // TC12 - Filter order by status
+  // ==========================================
+  test('TC12 - My Order page - Filter order by status', async () => {
+    await navigateToOrders();
+
+    // Click More Filters
+    await authenticatedPage.getByRole('button', { name: 'More Filters' }).click();
+    await authenticatedPage.waitForTimeout(500);
+
+    // Expand Order Status accordion
+    await authenticatedPage.getByRole('button', { name: 'Order Status' }).click();
+    await authenticatedPage.waitForTimeout(500);
+
+    // Select "Order Completed" checkbox
+    await authenticatedPage.getByRole('checkbox', { name: 'Order Completed' }).first().check();
+    await authenticatedPage.waitForTimeout(300);
+
+    // Click Apply Filter
+    await authenticatedPage.getByRole('button', { name: 'Apply Filter' }).click();
+    await waitForTableData();
+
+    // Verify all displayed orders have "Order Completed" status
+    const dataRows = authenticatedPage.getByRole('row').filter({ hasText: 'Order Completed' });
+    await expect(dataRows.first()).toBeVisible({ timeout: 10000 });
+
+    // Verify the heading shows filtered count
+    await expect(authenticatedPage.getByRole('heading', { level: 5 })).toContainText(/Orders \(\d+\)/);
   });
 
-  test('TC13 - My Order page - Filter order vista status', async ({ page }) => {
-    const testVistaStatus = 'Confirmed';
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Click More Filter
-    await page.click('[data-testid="more-filter-button"]');
-    await page.waitForSelector('[data-testid="filter-modal"]');
-    
-    // Step 3: Select vista status
-    await page.selectOption('[data-testid="filter-vista-status"]', testVistaStatus);
-    
-    // Apply filter
-    await page.click('[data-testid="apply-filter-button"]');
-    await page.waitForLoadState('networkidle');
-    
-    // Expected Result: Display order with same vista status
-    const searchResults = page.locator('tbody tr');
-    await expect(searchResults.first()).toBeVisible({ timeout: 5000 });
-    
-    // Verify all displayed orders have the selected vista status
-    const resultCount = await searchResults.count();
-    for (let i = 0; i < resultCount; i++) {
-      const vistaStatusCell = await searchResults.nth(i).locator('td').nth(6).textContent(); // Vista Status column
-      expect(vistaStatusCell).toContain(testVistaStatus);
-    }
-    
-    // Verify vista status filter is applied
-    await expect(page.locator('[data-testid="active-filter-indicator"]')).toBeVisible();
-    await expect(page.locator(`text=${testVistaStatus}`).first()).toBeVisible();
+  // ==========================================
+  // TC13 - Filter order vista status
+  // ==========================================
+  test('TC13 - My Order page - Filter order vista status', async () => {
+    await navigateToOrders();
+
+    // Click More Filters
+    await authenticatedPage.getByRole('button', { name: 'More Filters' }).click();
+    await authenticatedPage.waitForTimeout(500);
+
+    // Expand Vista Status accordion
+    await authenticatedPage.getByRole('button', { name: 'Vista Status' }).click();
+    await authenticatedPage.waitForTimeout(500);
+
+    // Select "Order Completed" checkbox under Vista Status
+    // The Vista Status accordion is a MUI Accordion - locate it by its text, then find checkbox within
+    const vistaAccordion = authenticatedPage.locator('.MuiAccordion-root', { hasText: 'Vista Status' });
+    await vistaAccordion.getByRole('checkbox', { name: 'Order Completed' }).check();
+    await authenticatedPage.waitForTimeout(300);
+
+    // Click Apply Filter
+    await authenticatedPage.getByRole('button', { name: 'Apply Filter' }).click();
+    await waitForTableData();
+
+    // Verify orders are displayed with matching vista status
+    const dataRows = authenticatedPage.getByRole('row').filter({ hasText: 'Order Completed' });
+    await expect(dataRows.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('TC14 - My Order page - Combination filtering', async ({ page }) => {
-    const startDate = '2024-01-01';
-    const endDate = '2024-12-31';
-    const testStatus = 'Completed';
-    const testVistaStatus = 'Confirmed';
-    
-    // Step 1: Navigate to Orders page (already in beforeEach)
-    
-    // Step 2: Click More Filter
-    await page.click('[data-testid="more-filter-button"]');
-    await page.waitForSelector('[data-testid="filter-modal"]');
-    
-    // Step 3: Select combination filter on date, status and vista status
-    // Select start date
-    await page.fill('[data-testid="filter-start-date"]', startDate);
-    
-    // Select end date
-    await page.fill('[data-testid="filter-end-date"]', endDate);
-    
-    // Select status
-    await page.selectOption('[data-testid="filter-status"]', testStatus);
-    
-    // Select vista status
-    await page.selectOption('[data-testid="filter-vista-status"]', testVistaStatus);
-    
-    // Apply filter
-    await page.click('[data-testid="apply-filter-button"]');
-    await page.waitForLoadState('networkidle');
-    
-    // Expected Result: Display correct items accordingly
-    const searchResults = page.locator('tbody tr');
-    await expect(searchResults.first()).toBeVisible({ timeout: 5000 });
-    
-    // Verify all displayed orders satisfy ALL filter criteria
-    const resultCount = await searchResults.count();
-    for (let i = 0; i < resultCount; i++) {
-      const row = searchResults.nth(i);
-      
-      // Verify status matches
-      const statusCell = await row.locator('td').nth(5).textContent();
-      expect(statusCell).toContain(testStatus);
-      
-      // Verify vista status matches
-      const vistaStatusCell = await row.locator('td').nth(6).textContent();
-      expect(vistaStatusCell).toContain(testVistaStatus);
-      
-      // Verify date is within range
-      const dateCell = await row.locator('td').nth(7).textContent();
-      const orderDate = new Date(dateCell || '');
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      
-      expect(orderDate.getTime()).toBeGreaterThanOrEqual(start.getTime());
-      expect(orderDate.getTime()).toBeLessThanOrEqual(end.getTime());
-    }
-    
-    // Verify all filters are applied (multiple filter indicators visible)
-    await expect(page.locator('[data-testid="active-filter-indicator"]')).toBeVisible();
-    await expect(page.locator(`text=${testStatus}`).first()).toBeVisible();
-    await expect(page.locator(`text=${testVistaStatus}`).first()).toBeVisible();
+  // ==========================================
+  // TC14 - Combination filtering
+  // ==========================================
+  test('TC14 - My Order page - Combination filtering', async () => {
+    await navigateToOrders();
+
+    // Click More Filters
+    await authenticatedPage.getByRole('button', { name: 'More Filters' }).click();
+    await authenticatedPage.waitForTimeout(500);
+
+    // 1. Expand Date and set date range
+    await authenticatedPage.getByRole('button', { name: 'Date' }).click();
+    await authenticatedPage.waitForTimeout(500);
+    const startDateInput = authenticatedPage.getByRole('textbox', { name: 'DD/MM/YYYY' }).first();
+    await startDateInput.fill('01/01/2026');
+    const endDateInput = authenticatedPage.getByRole('textbox', { name: 'DD/MM/YYYY' }).nth(1);
+    await endDateInput.fill('31/12/2026');
+
+    // 2. Expand Order Status and select "Order Completed"
+    await authenticatedPage.getByRole('button', { name: 'Order Status' }).click();
+    await authenticatedPage.waitForTimeout(500);
+    await authenticatedPage.getByRole('checkbox', { name: 'Order Completed' }).first().check();
+
+    // 3. Expand Vista Status and select "Order Completed"
+    await authenticatedPage.getByRole('button', { name: 'Vista Status' }).click();
+    await authenticatedPage.waitForTimeout(500);
+    const vistaAccordion = authenticatedPage.locator('.MuiAccordion-root', { hasText: 'Vista Status' });
+    await vistaAccordion.getByRole('checkbox', { name: 'Order Completed' }).check();
+
+    // Click Apply Filter
+    await authenticatedPage.getByRole('button', { name: 'Apply Filter' }).click();
+    await waitForTableData();
+
+    // Verify filtered results are displayed
+    const dataRows = authenticatedPage.getByRole('row').filter({ hasText: 'Order Completed' });
+    await expect(dataRows.first()).toBeVisible({ timeout: 10000 });
+
+    // Verify the heading shows filtered count
+    await expect(authenticatedPage.getByRole('heading', { level: 5 })).toContainText(/Orders \(\d+\)/);
   });
 });

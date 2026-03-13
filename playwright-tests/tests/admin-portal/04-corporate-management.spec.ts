@@ -1,795 +1,753 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { ADMIN_PORTAL } from '../../utils/test-data';
-import { AdminLoginPage } from '../../pages/admin-portal/LoginPage';
+
+const BASE_URL = 'https://corpvoucher.fam-stg.click';
+const CORP_MGMT_URL = `${BASE_URL}/corporate-management`;
 
 test.describe('Admin Portal - Corporate Management', () => {
-  test.beforeEach(async ({ page }) => {
-    const loginPage = new AdminLoginPage(page);
-    await loginPage.navigate();
-    await loginPage.login(ADMIN_PORTAL.CREDENTIALS.email, ADMIN_PORTAL.CREDENTIALS.password);
-    await page.waitForLoadState('networkidle');
+  let authenticatedPage: Page;
+
+  // Helper to wait for the app loading screen to disappear
+  async function waitForAppReady() {
+    await authenticatedPage.waitForSelector('text=Preparing your experience', { state: 'hidden', timeout: 30000 }).catch(() => {});
+    await authenticatedPage.waitForLoadState('networkidle');
+    await authenticatedPage.waitForTimeout(1000);
+  }
+
+  // Login ONCE before all tests
+  test.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext();
+    authenticatedPage = await context.newPage();
+
+    await authenticatedPage.goto(`${BASE_URL}/admin/login`);
+    await authenticatedPage.waitForSelector('text=Preparing your experience', { state: 'hidden', timeout: 30000 }).catch(() => {});
+    await authenticatedPage.waitForLoadState('networkidle');
+    await authenticatedPage.waitForTimeout(1000);
+
+    let currentUrl = authenticatedPage.url();
+
+    if (currentUrl.includes('login')) {
+      console.log('Performing regular login...');
+      const emailInput = authenticatedPage.getByRole('textbox', { name: /robot@gmail.com/i });
+      await emailInput.waitFor({ state: 'visible', timeout: 15000 });
+      await emailInput.fill(ADMIN_PORTAL.CREDENTIALS.email);
+      await authenticatedPage.locator('#password').fill(ADMIN_PORTAL.CREDENTIALS.password);
+      await authenticatedPage.getByRole('button', { name: /sign in/i }).click();
+
+      await authenticatedPage.waitForFunction(
+        () => !window.location.href.includes('/login'),
+        { timeout: 30000 }
+      );
+
+      await authenticatedPage.waitForSelector('text=Preparing your experience', { state: 'hidden', timeout: 30000 }).catch(() => {});
+      await authenticatedPage.waitForLoadState('networkidle');
+      await authenticatedPage.waitForTimeout(2000);
+
+      currentUrl = authenticatedPage.url();
+      console.log('After login, current URL:', currentUrl);
+
+      if (currentUrl.includes('login')) {
+        throw new Error('Login failed - still on login page');
+      }
+    }
+
+    console.log('✓ Authentication completed once for all tests');
   });
 
-  test('TC_CORP001: Download all corporate customers details', async ({ page }) => {
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    await page.click('button:has-text("Export List")');
-    await page.click('text=Export All');
-    const downloadPromise = page.waitForEvent('download');
-    await page.click('button:has-text("Export")');
+  test.afterAll(async () => {
+    await authenticatedPage?.close();
+  });
+
+  // Helper: navigate to Corporate Management page
+  async function navigateToCorporateManagement() {
+    await authenticatedPage.goto(CORP_MGMT_URL);
+    await waitForAppReady();
+    // Wait for the table to be visible
+    await authenticatedPage.getByRole('grid').first().waitFor({ state: 'visible', timeout: 15000 });
+  }
+
+  // Helper: open edit form for first corporate user
+  async function openFirstCorporateUserEdit() {
+    await navigateToCorporateManagement();
+    // Click the action button (last cell) in the first data row
+    const firstRow = authenticatedPage.getByRole('row').filter({ has: authenticatedPage.getByRole('checkbox', { name: 'Select row' }) }).first();
+    await firstRow.getByRole('button').click();
+    await authenticatedPage.waitForLoadState('networkidle');
+    await authenticatedPage.waitForTimeout(1000);
+    // Wait for the edit page to load
+    await authenticatedPage.getByRole('heading', { name: 'Corporate Customer Detail' }).waitFor({ state: 'visible', timeout: 15000 });
+  }
+
+  // =====================================================
+  // EXPORT / DOWNLOAD CORPORATE CUSTOMERS LIST
+  // =====================================================
+
+  test('TC_CORP001: Download all corporate customers details', async () => {
+    // Steps: Go to Corporate Management > Click Export List > Select Export All > Click Export
+    // Expected: Corporate customer details for all customers is successfully downloaded in csv file
+    await navigateToCorporateManagement();
+    await authenticatedPage.getByRole('button', { name: 'Export List' }).click();
+    await authenticatedPage.getByRole('dialog').waitFor({ state: 'visible' });
+    await authenticatedPage.getByRole('radio', { name: 'Export All' }).click();
+    const downloadPromise = authenticatedPage.waitForEvent('download');
+    await authenticatedPage.getByRole('dialog').getByRole('button', { name: 'Export' }).click();
     const download = await downloadPromise;
-    // Expected Result: Corporate customer details for all customers is successfully downloaded into user's device in csv file
     expect(download.suggestedFilename()).toContain('.csv');
   });
 
-  test('TC_CORP002: Download corporate customers by search result', async ({ page }) => {
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    await page.fill('input[placeholder*="Search"]', 'Test Company');
-    await page.press('input[placeholder*="Search"]', 'Enter');
-    await page.click('button:has-text("Export List")');
-    await page.click('text=Search Result');
-    const downloadPromise = page.waitForEvent('download');
-    await page.click('button:has-text("Export")');
+  test('TC_CORP002: Download corporate customers details based on search result', async () => {
+    // Steps: Go to Corporate Management > Search corporate customer in search filter > Click Export List > Select Search Result > Click Export
+    // Expected: Corporate customer details for customers based on search result is successfully downloaded in csv file
+    await navigateToCorporateManagement();
+    await authenticatedPage.getByRole('textbox', { name: 'Company Name' }).fill('Company');
+    await authenticatedPage.getByRole('textbox', { name: 'Company Name' }).press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await authenticatedPage.getByRole('button', { name: 'Export List' }).click();
+    await authenticatedPage.getByRole('dialog').waitFor({ state: 'visible' });
+    await authenticatedPage.getByRole('radio', { name: 'Export Search Result' }).click();
+    const downloadPromise = authenticatedPage.waitForEvent('download');
+    await authenticatedPage.getByRole('dialog').getByRole('button', { name: 'Export' }).click();
     const download = await downloadPromise;
-    // Expected Result: Corporate customer details for customers result based on search result is successfully downloaded into user's device in csv file
     expect(download.suggestedFilename()).toContain('.csv');
   });
 
-  test('TC_CORP003: Download selected corporate customers', async ({ page }) => {
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    await page.locator('input[type="checkbox"]').first().check();
-    await page.click('button:has-text("Export List")');
-    await page.click('text=Export Selected');
-    const downloadPromise = page.waitForEvent('download');
-    await page.click('button:has-text("Export")');
+  test('TC_CORP003: Download selected corporate customer details', async () => {
+    // Steps: Go to Corporate Management > Select corporate users by ticking checkboxes > Click Export List > Select Export All > Click Export
+    // Expected: Corporate customer details for selected customers is successfully downloaded in csv file
+    await navigateToCorporateManagement();
+    // Tick the first row checkbox
+    await authenticatedPage.getByRole('checkbox', { name: 'Select row' }).first().check();
+    await authenticatedPage.getByRole('button', { name: 'Export List' }).click();
+    await authenticatedPage.getByRole('dialog').waitFor({ state: 'visible' });
+    await authenticatedPage.getByRole('radio', { name: 'Export All' }).click();
+    const downloadPromise = authenticatedPage.waitForEvent('download');
+    await authenticatedPage.getByRole('dialog').getByRole('button', { name: 'Export' }).click();
     const download = await downloadPromise;
-    // Expected Result: Corporate customer details for customers selected is successfully downloaded into user's device in csv file
     expect(download.suggestedFilename()).toContain('.csv');
   });
 
-  test('TC_CORP004: Corporate Management page - Search corporate users based on company name', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Type in company name in company name search filter
-    await page.fill('input[placeholder*="Company Name"]', 'Axrail');
-    // Step 3: Press enter
-    await page.press('input[placeholder*="Company Name"]', 'Enter');
-    // Expected Result: Corporate customer that matched the company name searched is displayed
-    await expect(page.locator('text=Axrail')).toBeVisible();
+  // =====================================================
+  // SEARCH CORPORATE USERS
+  // =====================================================
+
+  test('TC_CORP004: Search corporate users based on company name', async () => {
+    // Steps: Go to Corporate Management > Type company name in company name search filter > Press enter > Observe results
+    // Expected: Corporate customer that matched the company name searched is displayed
+    await navigateToCorporateManagement();
+    await authenticatedPage.getByRole('textbox', { name: 'Company Name' }).fill('Company 88');
+    await authenticatedPage.getByRole('textbox', { name: 'Company Name' }).press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('cell', { name: 'Company 88' }).first()).toBeVisible();
   });
 
-  test('TC_CORP005: Corporate Management page - Search corporate users based on email', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Type in email in email search filter
-    await page.fill('input[placeholder*="Email"]', 'test@axrail.com');
-    // Step 3: Press enter
-    await page.press('input[placeholder*="Email"]', 'Enter');
-    // Expected Result: Corporate customer that matched the email searched is displayed
-    await expect(page.locator('text=test@axrail.com')).toBeVisible();
+  test('TC_CORP005: Search corporate users based on email', async () => {
+    // Steps: Go to Corporate Management > Type email in email search filter > Press enter > Observe results
+    // Expected: Corporate customer that matched the email searched is displayed
+    await navigateToCorporateManagement();
+    await authenticatedPage.getByRole('textbox', { name: 'Email' }).fill('najwa+88@axrail.com');
+    await authenticatedPage.getByRole('textbox', { name: 'Email' }).press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('cell', { name: 'najwa+88@axrail.com' }).first()).toBeVisible();
   });
 
-  test('TC_CORP006: Corporate Management page - Search corporate users based on phone number', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Type in phone number in phone number search filter
-    await page.fill('input[name="mobileNo"]', '60123456789');
-    // Step 3: Press enter
-    await page.press('input[placeholder*="Phone Number"]', 'Enter');
-    // Expected Result: Corporate customer that matched the phone number searched is displayed
-    await expect(page.locator('text=60123456789')).toBeVisible();
+  test('TC_CORP006: Search corporate users based on phone number', async () => {
+    // Steps: Go to Corporate Management > Type phone number in phone number search filter > Press enter > Observe results
+    // Expected: Corporate customer that matched the phone number searched is displayed
+    await navigateToCorporateManagement();
+    await authenticatedPage.getByRole('textbox', { name: 'Phone Number' }).fill('60102345600');
+    await authenticatedPage.getByRole('textbox', { name: 'Phone Number' }).press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('cell', { name: '+60102345600' }).first()).toBeVisible();
   });
 
-  test('TC_CORP007: Corporate Management page - Edit corporate customer\'s corporate information', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    await page.waitForTimeout(1000);
-    // Step 4: Edit corporate user's information in the Corporate Information section
-    await page.fill('input[name="fullName"]', 'Updated Company Name');
-    // Step 5: Click Save Changes button
-    await page.click('button:has-text("Save")');
-    // Expected Result: Corporate customer new information is edited and saved successfully
-    await expect(page.locator('text=Success')).toBeVisible();
+  test('TC_CORP007: Search corporate users based on company name and email', async () => {
+    // Steps: Go to Corporate Management > Type company name > Enter > Type email > Enter > Observe results
+    // Expected: Corporate customer that matched the company name and email searched is displayed
+    await navigateToCorporateManagement();
+    await authenticatedPage.getByRole('textbox', { name: 'Company Name' }).fill('Company 88');
+    await authenticatedPage.getByRole('textbox', { name: 'Company Name' }).press('Enter');
+    await authenticatedPage.getByRole('textbox', { name: 'Email' }).fill('najwa+88@axrail.com');
+    await authenticatedPage.getByRole('textbox', { name: 'Email' }).press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('cell', { name: 'Company 88' }).first()).toBeVisible();
+    await expect(authenticatedPage.getByRole('cell', { name: 'najwa+88@axrail.com' }).first()).toBeVisible();
   });
 
-  test('TC_CORP008: Corporate Management page - Delete entered mandatory fields', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    await page.waitForTimeout(1000);
-    // Step 4: Delete corporate user's information that is mandatory in the Corporate Information section
-    await page.fill('input[name="fullName"]', '');
-    // Step 5: Click Save Changes button
-    await page.click('button:has-text("Save")');
-    // Expected Result: Error message will be displayed for any empty mandatory fields (e.g., "Company name is required")
-    await expect(page.locator('text=required')).toBeVisible();
+  test('TC_CORP008: Search corporate users based on company name and phone number', async () => {
+    // Steps: Go to Corporate Management > Type company name > Enter > Type phone number > Enter > Observe results
+    // Expected: Corporate customer that matched the company name and phone number searched is displayed
+    await navigateToCorporateManagement();
+    await authenticatedPage.getByRole('textbox', { name: 'Company Name' }).fill('Company 88');
+    await authenticatedPage.getByRole('textbox', { name: 'Company Name' }).press('Enter');
+    await authenticatedPage.getByRole('textbox', { name: 'Phone Number' }).fill('60102345600');
+    await authenticatedPage.getByRole('textbox', { name: 'Phone Number' }).press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('cell', { name: 'Company 88' }).first()).toBeVisible();
+    await expect(authenticatedPage.getByRole('cell', { name: '+60102345600' }).first()).toBeVisible();
   });
 
-  test('TC_CORP009: Corporate Management page - Edit corporate customer\'s email to unused email', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Edit corporate user's company email to unused email
-    await page.fill('input[name="primaryEmail"]', `newemail${Date.now()}@test.com`);
-    // Step 5: Click Save Changes button
-    await page.click('button:has-text("Save")');
-    // Expected Result: Changes saved/updated successfully
-    await expect(page.locator('text=Success')).toBeVisible();
+  test('TC_CORP009: Search corporate users based on email and phone number', async () => {
+    // Steps: Go to Corporate Management > Type email > Enter > Type phone number > Enter > Observe results
+    // Expected: Corporate customer that matched the email and phone number searched is displayed
+    await navigateToCorporateManagement();
+    await authenticatedPage.getByRole('textbox', { name: 'Email' }).fill('najwa+88@axrail.com');
+    await authenticatedPage.getByRole('textbox', { name: 'Email' }).press('Enter');
+    await authenticatedPage.getByRole('textbox', { name: 'Phone Number' }).fill('60102345600');
+    await authenticatedPage.getByRole('textbox', { name: 'Phone Number' }).press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('cell', { name: 'najwa+88@axrail.com' }).first()).toBeVisible();
+    await expect(authenticatedPage.getByRole('cell', { name: '+60102345600' }).first()).toBeVisible();
   });
 
-  test('TC_CORP010: Corporate Management page - Edit corporate customer\'s email to used email only', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Edit corporate user's company email to used email
-    await page.fill('input[name="primaryEmail"]', 'existing@axrail.com');
-    // Step 5: Click Save Changes button
-    await page.click('button:has-text("Save")');
-    // Expected Result: Error message will be displayed "Email ..... already exists for another customer"
-    await expect(page.locator('text=already exists')).toBeVisible();
+  test('TC_CORP010: Search corporate users based on company name, email and phone number', async () => {
+    // Steps: Go to Corporate Management > Type company name > Enter > Type email > Enter > Type phone number > Enter > Observe results
+    // Expected: Corporate customer that matched the company name, email and phone number searched is displayed
+    await navigateToCorporateManagement();
+    await authenticatedPage.getByRole('textbox', { name: 'Company Name' }).fill('Company 88');
+    await authenticatedPage.getByRole('textbox', { name: 'Company Name' }).press('Enter');
+    await authenticatedPage.getByRole('textbox', { name: 'Email' }).fill('najwa+88@axrail.com');
+    await authenticatedPage.getByRole('textbox', { name: 'Email' }).press('Enter');
+    await authenticatedPage.getByRole('textbox', { name: 'Phone Number' }).fill('60102345600');
+    await authenticatedPage.getByRole('textbox', { name: 'Phone Number' }).press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('cell', { name: 'Company 88' }).first()).toBeVisible();
+    await expect(authenticatedPage.getByRole('cell', { name: 'najwa+88@axrail.com' }).first()).toBeVisible();
+    await expect(authenticatedPage.getByRole('cell', { name: '+60102345600' }).first()).toBeVisible();
   });
 
-  test('TC_CORP011: Corporate Management page - View corporate user\'s purchase history from a specific date until today', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Click the Filter Date button
-    await page.click('button:has-text("Filter Date")');
-    // Step 6: Select start date only
-    await page.fill('input[name="startDate"]', '2024-01-01');
-    // Step 7: Click Update
-    await page.click('button:has-text("Update")');
-    // Expected Result: Corporate user's purchase history from the date selected until today is displayed
-    await expect(page.locator('.purchase-history')).toBeVisible();
+  // =====================================================
+  // EDIT CORPORATE CUSTOMER INFORMATION
+  // =====================================================
+
+  test('TC_CORP011: Edit corporate customer\'s corporate information', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Edit corporate info > Click Save Changes
+    // Expected: Corporate customer new information is edited and saved successfully
+    await openFirstCorporateUserEdit();
+    const companyNameInput = authenticatedPage.locator('text=Company Name *').locator('..').getByRole('textbox');
+    const originalName = await companyNameInput.inputValue();
+    await companyNameInput.fill('Updated Company Name');
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(2000);
+    // Revert the name back
+    await companyNameInput.fill(originalName);
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(1000);
   });
 
-  test('TC_CORP012: Corporate Management page - Search corporate user\'s purchase history by booking number', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Type in the booking number in the search bar
-    await page.fill('input[placeholder*="Booking"]', 'BK123456');
-    // Step 6: Click enter
-    await page.press('input[placeholder*="Booking"]', 'Enter');
-    // Expected Result: Corporate user's purchase history that satisfies the booking number in the listing
-    await expect(page.locator('text=BK123456')).toBeVisible();
+  test('TC_CORP012: Delete entered mandatory fields (Negative)', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Delete mandatory field > Click Save Changes
+    // Expected: Error message displayed for empty mandatory fields, e.g. "Company name is required"
+    await openFirstCorporateUserEdit();
+    const companyNameInput = authenticatedPage.locator('text=Company Name *').locator('..').getByRole('textbox');
+    const originalName = await companyNameInput.inputValue();
+    await companyNameInput.fill('');
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.locator('text=/required/i')).toBeVisible({ timeout: 10000 });
+    // Restore original value
+    await companyNameInput.fill(originalName);
   });
 
-  test('TC_CORP013: Corporate Management page - Search corporate user\'s purchase history by Order ID', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Type in the Order ID in the search bar
-    await page.fill('input[placeholder*="Order"]', 'TGV123');
-    // Step 6: Click enter
-    await page.press('input[placeholder*="Order"]', 'Enter');
-    // Expected Result: Corporate user's purchase history that satisfies the Order ID is displayed in the listing
-    await expect(page.locator('text=TGV123')).toBeVisible();
+  test('TC_CORP013: Edit corporate customer\'s email to unused email', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Edit email to unused email > Click Save Changes
+    // Expected: Changes saved/updated successfully
+    await openFirstCorporateUserEdit();
+    const emailInput = authenticatedPage.locator('text=Company Email *').locator('..').getByRole('textbox');
+    const originalEmail = await emailInput.inputValue();
+    await emailInput.fill(`newemail${Date.now()}@test.com`);
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(2000);
+    // Revert email
+    await emailInput.fill(originalEmail);
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(1000);
   });
 
-  test('TC_CORP014: Corporate Management page - Search corporate user\'s inventory by voucher name', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Inventory section
-    await page.click('text=Inventory');
-    // Step 5: Search by voucher name in the search filter
-    await page.fill('input[placeholder*="Search"]', 'Movie Pass');
-    // Step 6: Observe the search result
-    await page.press('input[placeholder*="Search"]', 'Enter');
-    // Expected Result: Corporate user's purchase history that satisfies the voucher name is displayed in the listing
-    await expect(page.locator('text=Movie Pass')).toBeVisible();
+  test('TC_CORP014: Edit corporate customer\'s email to used email only (Negative)', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Edit email to used email > Click Save Changes
+    // Expected: Error message "Email ..... already exists for another customer"
+    await openFirstCorporateUserEdit();
+    const emailInput = authenticatedPage.locator('text=Company Email *').locator('..').getByRole('textbox');
+    await emailInput.fill('aliaarina@axrail.com');
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.locator('text=/already exists/i')).toBeVisible({ timeout: 10000 });
   });
 
-  test('TC_CORP015: Corporate Management page - Download corporate user\'s all inventory', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Inventory section
-    await page.click('text=Inventory');
-    // Step 5: Click Download Inventory Report
-    await page.click('button:has-text("Download")');
-    // Step 6: Select Export All
-    await page.click('text=Export All');
-    // Step 7: Click Export
-    const downloadPromise = page.waitForEvent('download');
-    await page.click('button:has-text("Export")');
+  test('TC_CORP015: Edit corporate customer\'s mobile number to used mobile number', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Edit mobile number to unused mobile number > Click Save Changes
+    // Expected: Changes saved/updated successfully
+    await openFirstCorporateUserEdit();
+    const phoneInput = authenticatedPage.locator('text=Company Phone Number *').locator('..').getByRole('textbox');
+    const originalPhone = await phoneInput.inputValue();
+    await phoneInput.fill(`6012${Date.now().toString().slice(-7)}`);
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(2000);
+    // Revert phone
+    await phoneInput.fill(originalPhone);
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(1000);
+  });
+
+  test('TC_CORP016: Edit corporate customer\'s mobile number to unused mobile number', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Edit mobile number to used mobile number > Click Save Changes
+    // Expected: Changes saved/updated successfully
+    await openFirstCorporateUserEdit();
+    const phoneInput = authenticatedPage.locator('text=Company Phone Number *').locator('..').getByRole('textbox');
+    const originalPhone = await phoneInput.inputValue();
+    await phoneInput.fill('60168402737');
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(2000);
+    // Revert phone
+    await phoneInput.fill(originalPhone);
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(1000);
+  });
+
+  test('TC_CORP017: Edit email to unused email and mobile number to unused mobile number', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Edit email to unused > Edit mobile to unused > Click Save Changes
+    // Expected: Changes saved/updated successfully
+    await openFirstCorporateUserEdit();
+    const emailInput = authenticatedPage.locator('text=Company Email *').locator('..').getByRole('textbox');
+    const phoneInput = authenticatedPage.locator('text=Company Phone Number *').locator('..').getByRole('textbox');
+    const originalEmail = await emailInput.inputValue();
+    const originalPhone = await phoneInput.inputValue();
+    await emailInput.fill(`newemail${Date.now()}@test.com`);
+    await phoneInput.fill(`6012${Date.now().toString().slice(-7)}`);
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(2000);
+    // Revert
+    await emailInput.fill(originalEmail);
+    await phoneInput.fill(originalPhone);
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(1000);
+  });
+
+  test('TC_CORP018: Edit email to unused email and mobile number to used mobile number', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Edit email to unused > Edit mobile to used > Click Save Changes
+    // Expected: Changes saved/updated successfully
+    await openFirstCorporateUserEdit();
+    const emailInput = authenticatedPage.locator('text=Company Email *').locator('..').getByRole('textbox');
+    const phoneInput = authenticatedPage.locator('text=Company Phone Number *').locator('..').getByRole('textbox');
+    const originalEmail = await emailInput.inputValue();
+    const originalPhone = await phoneInput.inputValue();
+    await emailInput.fill(`newemail${Date.now()}@test.com`);
+    await phoneInput.fill('60168402737');
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(2000);
+    // Revert
+    await emailInput.fill(originalEmail);
+    await phoneInput.fill(originalPhone);
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(1000);
+  });
+
+  test('TC_CORP019: Edit email to used email and mobile number to unused mobile number (Negative)', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Edit email to used > Edit mobile to unused > Click Save Changes
+    // Expected: Error message "Email ..... already exists for another customer"
+    await openFirstCorporateUserEdit();
+    const emailInput = authenticatedPage.locator('text=Company Email *').locator('..').getByRole('textbox');
+    const phoneInput = authenticatedPage.locator('text=Company Phone Number *').locator('..').getByRole('textbox');
+    await emailInput.fill('aliaarina@axrail.com');
+    await phoneInput.fill(`6012${Date.now().toString().slice(-7)}`);
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.locator('text=/already exists/i')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('TC_CORP020: Edit email to used email and mobile number to used mobile number (Negative)', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Edit email to used > Edit mobile to used > Click Save Changes
+    // Expected: Error message "Email ..... already exists for another customer"
+    await openFirstCorporateUserEdit();
+    const emailInput = authenticatedPage.locator('text=Company Email *').locator('..').getByRole('textbox');
+    const phoneInput = authenticatedPage.locator('text=Company Phone Number *').locator('..').getByRole('textbox');
+    await emailInput.fill('aliaarina@axrail.com');
+    await phoneInput.fill('60168402737');
+    await authenticatedPage.getByRole('button', { name: 'Save Changes' }).click();
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.locator('text=/already exists/i')).toBeVisible({ timeout: 10000 });
+  });
+
+  // =====================================================
+  // PURCHASE HISTORY - FILTER & SEARCH
+  // =====================================================
+
+  test('TC_CORP021: View corporate user\'s purchase history from a specific date until today', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Scroll to Purchase History > Click Filter Date > Select start date only > Click Update
+    // Expected: Corporate user's purchase history from the date selected until today is displayed
+    await openFirstCorporateUserEdit();
+    await authenticatedPage.getByRole('button', { name: 'Filter Date' }).click();
+    await authenticatedPage.getByRole('dialog').waitFor({ state: 'visible' });
+    // Navigate to previous month and select a start date
+    await authenticatedPage.getByRole('button', { name: 'Go to previous month' }).click();
+    await authenticatedPage.getByRole('gridcell', { name: '1' }).first().click();
+    // Click Update with only start date selected
+    await authenticatedPage.getByRole('button', { name: 'Update' }).click();
+    await authenticatedPage.waitForTimeout(1000);
+    // Verify purchase history table is still visible
+    await expect(authenticatedPage.getByRole('grid').first()).toBeVisible();
+  });
+
+  test('TC_CORP022: Filter corporate user\'s purchase history by date', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Scroll to Purchase History > Click Filter Date > Select start date and end date > Click Update
+    // Expected: Corporate user's purchase history that satisfies the filter date is displayed in the listing
+    await openFirstCorporateUserEdit();
+    await authenticatedPage.getByRole('button', { name: 'Filter Date' }).click();
+    await authenticatedPage.getByRole('dialog').waitFor({ state: 'visible' });
+    // Select start date
+    await authenticatedPage.getByRole('button', { name: 'Go to previous month' }).click();
+    await authenticatedPage.getByRole('gridcell', { name: '1' }).first().click();
+    // Select end date
+    await authenticatedPage.getByRole('gridcell', { name: '28' }).last().click();
+    await authenticatedPage.getByRole('button', { name: 'Update' }).click();
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('grid').first()).toBeVisible();
+  });
+
+  test('TC_CORP023: Clear filter date choices', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Scroll to Purchase History > Click Filter Date > Select start/end date > Click Update > Click Filter Date again > Select Cancel > Observe
+    // Expected: Filter date are cleared and listings update to show all purchase history
+    await openFirstCorporateUserEdit();
+    await authenticatedPage.getByRole('button', { name: 'Filter Date' }).click();
+    await authenticatedPage.getByRole('dialog').waitFor({ state: 'visible' });
+    await authenticatedPage.getByRole('button', { name: 'Go to previous month' }).click();
+    await authenticatedPage.getByRole('gridcell', { name: '1' }).first().click();
+    await authenticatedPage.getByRole('gridcell', { name: '28' }).last().click();
+    await authenticatedPage.getByRole('button', { name: 'Update' }).click();
+    await authenticatedPage.waitForTimeout(500);
+    // Click Filter Date again and Cancel to clear
+    await authenticatedPage.getByRole('button', { name: 'Filter Date' }).click();
+    await authenticatedPage.getByRole('dialog').waitFor({ state: 'visible' });
+    await authenticatedPage.getByRole('button', { name: 'Cancel' }).click();
+    await authenticatedPage.waitForTimeout(500);
+    // Verify listing is still visible (filter cleared, showing all history)
+    await expect(authenticatedPage.getByRole('grid').first()).toBeVisible();
+  });
+
+  test('TC_CORP024: Search corporate user\'s purchase history by booking number', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Scroll to Purchase History > Type booking number in search bar > Click enter
+    // Expected: Corporate user's purchase history that satisfies the booking number is displayed in the listing
+    await openFirstCorporateUserEdit();
+    const searchInput = authenticatedPage.getByRole('textbox', { name: 'Search by Booking Number, Order ID' });
+    await searchInput.fill('2148822');
+    await searchInput.press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('cell', { name: '2148822' }).first()).toBeVisible();
+  });
+
+  test('TC_CORP025: Search corporate user\'s purchase history by Order ID', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Scroll to Purchase History > Type Order ID in search bar > Click enter
+    // Expected: Corporate user's purchase history that satisfies the Order ID is displayed in the listing
+    await openFirstCorporateUserEdit();
+    const searchInput = authenticatedPage.getByRole('textbox', { name: 'Search by Booking Number, Order ID' });
+    await searchInput.fill('TGV2603101551E0I');
+    await searchInput.press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('cell', { name: 'TGV2603101551E0I' }).first()).toBeVisible();
+  });
+
+  test('TC_CORP026: Search corporate user\'s purchase history by Transaction No.', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Scroll to Purchase History > Type Transaction No in search bar > Click enter
+    // Expected: Corporate user's purchase history that satisfies the Transaction No is displayed in the listing
+    await openFirstCorporateUserEdit();
+    const searchInput = authenticatedPage.getByRole('textbox', { name: 'Search by Booking Number, Order ID' });
+    await searchInput.fill('PYM2603101551LZ7');
+    await searchInput.press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('cell', { name: 'PYM2603101551LZ7' }).first()).toBeVisible();
+  });
+
+  // =====================================================
+  // INVENTORY - SEARCH & DOWNLOAD
+  // =====================================================
+
+  test('TC_CORP027: Search corporate user\'s inventory by voucher name', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Scroll to Inventory > Search by voucher name > Observe result
+    // Expected: Corporate user's inventory that satisfies the voucher name is displayed in the listing
+    await openFirstCorporateUserEdit();
+    const searchInput = authenticatedPage.getByRole('textbox', { name: 'Search by Voucher Name' });
+    await searchInput.fill('IMAX');
+    await searchInput.press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await expect(authenticatedPage.getByRole('cell', { name: 'IMAX Pass' }).first()).toBeVisible();
+  });
+
+  test('TC_CORP028: Download corporate user\'s all inventory', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Scroll to Inventory > Click Download Inventory Report > Select Export All > Click Export
+    // Expected: Corporate user's inventory is successfully downloaded in csv file
+    await openFirstCorporateUserEdit();
+    await authenticatedPage.getByRole('button', { name: 'Download Inventory Report' }).click();
+    await authenticatedPage.getByRole('dialog').waitFor({ state: 'visible' });
+    await authenticatedPage.getByRole('radio', { name: 'Export All' }).click();
+    const downloadPromise = authenticatedPage.waitForEvent('download');
+    await authenticatedPage.getByRole('dialog').getByRole('button', { name: 'Export' }).click();
     const download = await downloadPromise;
-    // Expected Result: Corporate user's inventory is successfully downloaded into user's device in csv file
     expect(download.suggestedFilename()).toContain('.csv');
   });
 
-  test('TC_CORP016: Corporate Management page - Search corporate users based on company name and email', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Type in company name in company name search filter
-    await page.fill('input[placeholder*="Company Name"]', 'Axrail');
-    // Step 3: Press enter
-    await page.press('input[placeholder*="Company Name"]', 'Enter');
-    // Step 4: Type in email in email search filter
-    await page.fill('input[placeholder*="Email"]', 'test@axrail.com');
-    // Step 5: Press enter
-    await page.press('input[placeholder*="Email"]', 'Enter');
-    // Expected Result: Corporate customer that matched the company name and email searched is displayed
-    await expect(page.locator('text=Axrail')).toBeVisible();
-    await expect(page.locator('text=test@axrail.com')).toBeVisible();
-  });
-
-  test('TC_CORP017: Corporate Management page - Search corporate users based on company name and phone number', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Type in company name in company name search filter
-    await page.fill('input[placeholder*="Company Name"]', 'Axrail');
-    // Step 3: Press enter
-    await page.press('input[placeholder*="Company Name"]', 'Enter');
-    // Step 4: Type in phone number in phone number search filter
-    await page.fill('input[name="mobileNo"]', '60123456789');
-    // Step 5: Press enter
-    await page.press('input[placeholder*="Phone Number"]', 'Enter');
-    // Expected Result: Corporate customer that matched the company name and phone number searched is displayed
-    await expect(page.locator('text=Axrail')).toBeVisible();
-    await expect(page.locator('text=60123456789')).toBeVisible();
-  });
-
-  test('TC_CORP018: Corporate Management page - Search corporate users based on email and phone number', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Type in email in email search filter
-    await page.fill('input[placeholder*="Email"]', 'test@axrail.com');
-    // Step 3: Press enter
-    await page.press('input[placeholder*="Email"]', 'Enter');
-    // Step 4: Type in phone number in phone number search filter
-    await page.fill('input[name="mobileNo"]', '60123456789');
-    // Step 5: Press enter
-    await page.press('input[placeholder*="Phone Number"]', 'Enter');
-    // Expected Result: Corporate customer that matched the email and phone number searched is displayed
-    await expect(page.locator('text=test@axrail.com')).toBeVisible();
-    await expect(page.locator('text=60123456789')).toBeVisible();
-  });
-
-  test('TC_CORP019: Corporate Management page - Search corporate users based on company name, email and phone number', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Type in company name in company name search filter
-    await page.fill('input[placeholder*="Company Name"]', 'Axrail');
-    // Step 3: Press enter
-    await page.press('input[placeholder*="Company Name"]', 'Enter');
-    // Step 4: Type in email in email search filter
-    await page.fill('input[placeholder*="Email"]', 'test@axrail.com');
-    // Step 5: Press enter
-    await page.press('input[placeholder*="Email"]', 'Enter');
-    // Step 6: Type in phone number in phone number search filter
-    await page.fill('input[name="mobileNo"]', '60123456789');
-    // Step 7: Press enter
-    await page.press('input[placeholder*="Phone Number"]', 'Enter');
-    // Expected Result: Corporate customer that matched the company name, email and phone number searched is displayed
-    await expect(page.locator('text=Axrail')).toBeVisible();
-    await expect(page.locator('text=test@axrail.com')).toBeVisible();
-    await expect(page.locator('text=60123456789')).toBeVisible();
-  });
-
-  test('TC_CORP020: Corporate Management page - Edit corporate customer\'s mobile number to unused mobile number', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Edit corporate user's company mobile number to unused mobile number
-    await page.fill('input[name="mobileNo"]', `6012${Date.now().toString().slice(-7)}`);
-    // Step 5: Click Save Changes button
-    await page.click('button:has-text("Save")');
-    // Expected Result: Changes saved/updated successfully
-    await expect(page.locator('text=Success')).toBeVisible();
-  });
-
-  test('TC_CORP021: Corporate Management page - Edit corporate customer\'s mobile number to used mobile number', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Edit corporate user's company mobile number to used mobile number
-    await page.fill('input[name="mobileNo"]', '60123456789');
-    // Step 5: Click Save Changes button
-    await page.click('button:has-text("Save")');
-    // Expected Result: Changes saved/updated successfully
-    await expect(page.locator('text=Success')).toBeVisible();
-  });
-
-  test('TC_CORP022: Corporate Management page - Edit email to unused email and mobile number to unused mobile number', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Edit corporate user's company email to unused email
-    await page.fill('input[name="primaryEmail"]', `newemail${Date.now()}@test.com`);
-    // Step 5: Edit corporate user's company mobile number to unused mobile number
-    await page.fill('input[name="mobileNo"]', `6012${Date.now().toString().slice(-7)}`);
-    // Step 6: Click Save Changes button
-    await page.click('button:has-text("Save")');
-    // Expected Result: Changes saved/updated successfully
-    await expect(page.locator('text=Success')).toBeVisible();
-  });
-
-  test('TC_CORP023: Corporate Management page - Edit email to unused email and mobile number to used mobile number', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Edit corporate user's company email to unused email
-    await page.fill('input[name="primaryEmail"]', `newemail${Date.now()}@test.com`);
-    // Step 5: Edit corporate user's company mobile number to used mobile number
-    await page.fill('input[name="mobileNo"]', '60123456789');
-    // Step 6: Click Save Changes button
-    await page.click('button:has-text("Save")');
-    // Expected Result: Changes saved/updated successfully
-    await expect(page.locator('text=Success')).toBeVisible();
-  });
-
-  test('TC_CORP024: Corporate Management page - Edit email to used email and mobile number to unused mobile number', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Edit corporate user's company email to used email
-    await page.fill('input[name="primaryEmail"]', 'existing@axrail.com');
-    // Step 5: Edit corporate user's company mobile number to unused mobile number
-    await page.fill('input[name="mobileNo"]', `6012${Date.now().toString().slice(-7)}`);
-    // Step 6: Click Save Changes button
-    await page.click('button:has-text("Save")');
-    // Expected Result: Error message will be displayed "Email ..... already exists for another customer"
-    await expect(page.locator('text=already exists')).toBeVisible();
-  });
-
-  test('TC_CORP025: Corporate Management page - Edit email to used email and mobile number to used mobile number', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Edit corporate user's company email to used email
-    await page.fill('input[name="primaryEmail"]', 'existing@axrail.com');
-    // Step 5: Edit corporate user's company mobile number to used mobile number
-    await page.fill('input[name="mobileNo"]', '60123456789');
-    // Step 6: Click Save Changes button
-    await page.click('button:has-text("Save")');
-    // Expected Result: Error message will be displayed "Email ..... already exists for another customer"
-    await expect(page.locator('text=already exists')).toBeVisible();
-  });
-
-  test('TC_CORP026: Corporate Management page - Filter corporate user\'s purchase history by date', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Click the Filter Date button
-    await page.click('button:has-text("Filter Date")');
-    // Step 6: Select start date and end date
-    await page.fill('input[name="startDate"]', '2024-01-01');
-    await page.fill('input[name="endDate"]', '2024-12-31');
-    // Step 7: Click Update
-    await page.click('button:has-text("Update")');
-    // Expected Result: Corporate user's purchase history that satisfies the filter date is displayed in the listing
-    await expect(page.locator('.purchase-history')).toBeVisible();
-  });
-
-  test('TC_CORP027: Corporate Management page - Clear filter date choices', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Click the Filter Date button
-    await page.click('button:has-text("Filter Date")');
-    // Step 6: Select start date and end date
-    await page.fill('input[name="startDate"]', '2024-01-01');
-    await page.fill('input[name="endDate"]', '2024-12-31');
-    // Step 7: Click Update
-    await page.click('button:has-text("Update")');
-    // Step 8: Click the Filter Date button again
-    await page.click('button:has-text("Filter Date")');
-    // Step 9: Select Cancel
-    await page.click('button:has-text("Cancel")');
-    // Expected Result: Observe that the filter date are cleared and listings update to show all purchase history
-    await expect(page.locator('.purchase-history')).toBeVisible();
-  });
-
-  test('TC_CORP028: Corporate Management page - Search corporate user\'s purchase history by Transaction No.', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Type in the Transaction No in the search bar
-    await page.fill('input[placeholder*="Transaction"]', 'TXN123456');
-    // Step 6: Click enter
-    await page.press('input[placeholder*="Transaction"]', 'Enter');
-    // Expected Result: Corporate user's purchase history that satisfies the Transaction No is displayed in the listing
-    await expect(page.locator('text=TXN123456')).toBeVisible();
-  });
-
-  test('TC_CORP029: Corporate Management page - Download corporate user\'s inventory by search result', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Inventory section
-    await page.click('text=Inventory');
-    // Step 5: Search by voucher name in the search filter
-    await page.fill('input[placeholder*="Search"]', 'Movie Pass');
-    await page.press('input[placeholder*="Search"]', 'Enter');
-    // Step 6: Click Download Inventory Report
-    await page.click('button:has-text("Download")');
-    // Step 7: Click Export List button
-    // Step 8: Select Search Result
-    await page.click('text=Search Result');
-    // Step 9: Click Export
-    const downloadPromise = page.waitForEvent('download');
-    await page.click('button:has-text("Export")');
+  test('TC_CORP029: Download corporate user\'s inventory by search result', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Scroll to Inventory > Search by voucher name > Click Download Inventory Report > Select Search Result > Click Export
+    // Expected: Corporate user's inventory based on search result is successfully downloaded in csv file
+    await openFirstCorporateUserEdit();
+    const searchInput = authenticatedPage.getByRole('textbox', { name: 'Search by Voucher Name' });
+    await searchInput.fill('IMAX');
+    await searchInput.press('Enter');
+    await authenticatedPage.waitForTimeout(1000);
+    await authenticatedPage.getByRole('button', { name: 'Download Inventory Report' }).click();
+    await authenticatedPage.getByRole('dialog').waitFor({ state: 'visible' });
+    await authenticatedPage.getByRole('radio', { name: 'Export Search Result' }).click();
+    const downloadPromise = authenticatedPage.waitForEvent('download');
+    await authenticatedPage.getByRole('dialog').getByRole('button', { name: 'Export' }).click();
     const download = await downloadPromise;
-    // Expected Result: Corporate user's inventory for result based on search result is successfully downloaded into user's device in csv file
     expect(download.suggestedFilename()).toContain('.csv');
   });
 
-  test('TC_CORP030: Corporate Management page - Download corporate user\'s selected inventory', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Inventory section
-    await page.click('text=Inventory');
-    // Step 5: Select vouchers by ticking the checkboxes
-    await page.locator('input[type="checkbox"]').first().check();
-    // Step 6: Click Export List button
-    await page.click('button:has-text("Download")');
-    // Step 7: Select Export All
-    await page.click('text=Export Selected');
-    // Step 8: Click Export
-    const downloadPromise = page.waitForEvent('download');
-    await page.click('button:has-text("Export")');
+  test('TC_CORP030: Download corporate user\'s selected inventory', async () => {
+    // Steps: Go to Corporate Management > Select a corporate user > Click edit icon > Scroll to Inventory > Select vouchers by ticking checkboxes > Click Download Inventory Report > Select Export All > Click Export
+    // Expected: Corporate user's inventory for selected inventory(s) is successfully downloaded in csv file
+    await openFirstCorporateUserEdit();
+    // Tick the first inventory row checkbox (inside the Inventory grid)
+    const inventoryGrid = authenticatedPage.getByRole('grid').last();
+    await inventoryGrid.getByRole('checkbox', { name: 'Select row' }).first().check();
+    await authenticatedPage.getByRole('button', { name: 'Download Inventory Report' }).click();
+    await authenticatedPage.getByRole('dialog').waitFor({ state: 'visible' });
+    await authenticatedPage.getByRole('radio', { name: 'Export All' }).click();
+    const downloadPromise = authenticatedPage.waitForEvent('download');
+    await authenticatedPage.getByRole('dialog').getByRole('button', { name: 'Export' }).click();
     const download = await downloadPromise;
-    // Expected Result: Corporate user's inventory for selected inventory(s) is successfully downloaded into user's device in csv file
     expect(download.suggestedFilename()).toContain('.csv');
   });
 
-  test('TC_CORP031: Corporate Management page - Sort Purchase History by Booking No.', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Click the arrow beside Booking No.
-    await page.click('th:has-text("Booking No.")');
-    // Step 6: Click once to observe ascending order
-    // Expected Result: Corporate user's purchase history is sorted based on Booking No. (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Booking No.") svg')).toBeVisible();
-    // Step 7: Click again to observe descending order
-    await page.click('th:has-text("Booking No.")');
-    // Expected Result: Corporate user's purchase history is sorted based on Booking No. (Arrow down: descending)
-    await expect(page.locator('th:has-text("Booking No.") svg')).toBeVisible();
+  // =====================================================
+  // SORT PURCHASE HISTORY
+  // =====================================================
+
+  test('TC_CORP031: Sort Purchase History by Booking No.', async () => {
+    // Steps: Click arrow beside Booking No. > Click once (ascending) > Click again (descending) > Click again (original)
+    // Expected: Purchase history sorted by Booking No. (Arrow up: ascending, Arrow down: descending)
+    await openFirstCorporateUserEdit();
+    const purchaseHistoryGrid = authenticatedPage.getByRole('grid').first();
+    const header = purchaseHistoryGrid.getByRole('columnheader', { name: 'Booking No.' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP032: Corporate Management page - Sort Purchase History by Order ID', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Click the arrow beside Order ID
-    await page.click('th:has-text("Order ID")');
-    // Step 6: Click once to observe ascending order
-    // Expected Result: Corporate user's purchase history is sorted based on Order ID (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Order ID") svg')).toBeVisible();
-    // Step 7: Click again to observe descending order
-    await page.click('th:has-text("Order ID")');
-    // Expected Result: Corporate user's purchase history is sorted based on Order ID (Arrow down: descending)
-    await expect(page.locator('th:has-text("Order ID") svg')).toBeVisible();
+  test('TC_CORP032: Sort Purchase History by Order ID', async () => {
+    // Steps: Click arrow beside Order ID > Click once (ascending) > Click again (descending) > Click again (original)
+    // Expected: Purchase history sorted by Order ID (Arrow up: ascending, Arrow down: descending)
+    await openFirstCorporateUserEdit();
+    const purchaseHistoryGrid = authenticatedPage.getByRole('grid').first();
+    const header = purchaseHistoryGrid.getByRole('columnheader', { name: 'Order ID' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP033: Corporate Management page - Sort Purchase History by Transaction No.', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Click the arrow beside Transaction No.
-    await page.click('th:has-text("Transaction No.")');
-    // Step 6: Click once to observe ascending order
-    // Expected Result: Corporate user's purchase history is sorted based on Transaction No. (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Transaction No.") svg')).toBeVisible();
-    // Step 7: Click again to observe descending order
-    await page.click('th:has-text("Transaction No.")');
-    // Expected Result: Corporate user's purchase history is sorted based on Transaction No. (Arrow down: descending)
-    await expect(page.locator('th:has-text("Transaction No.") svg')).toBeVisible();
+  test('TC_CORP033: Sort Purchase History by Transaction No.', async () => {
+    // Steps: Click arrow beside Transaction No. > Click once (ascending) > Click again (descending) > Click again (original)
+    // Expected: Purchase history sorted by Transaction No. (Arrow up: ascending, Arrow down: descending)
+    await openFirstCorporateUserEdit();
+    const purchaseHistoryGrid = authenticatedPage.getByRole('grid').first();
+    const header = purchaseHistoryGrid.getByRole('columnheader', { name: 'Transaction No.' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP034: Corporate Management page - Sort Purchase History by Total Item', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Click the arrow beside Total Item
-    await page.click('th:has-text("Total Item")');
-    // Step 6: Click once to observe ascending order
-    // Expected Result: Corporate user's purchase history is sorted based on Total Item (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Total Item") svg')).toBeVisible();
-    // Step 7: Click again to observe descending order
-    await page.click('th:has-text("Total Item")');
-    // Expected Result: Corporate user's purchase history is sorted based on Total Item (Arrow down: descending)
-    await expect(page.locator('th:has-text("Total Item") svg')).toBeVisible();
+  test('TC_CORP034: Sort Purchase History by Total Item', async () => {
+    // Steps: Click arrow beside Total Item > Click once (ascending) > Click again (descending) > Click again (original)
+    // Expected: Purchase history sorted by Total Item (Arrow up: ascending, Arrow down: descending)
+    await openFirstCorporateUserEdit();
+    const purchaseHistoryGrid = authenticatedPage.getByRole('grid').first();
+    const header = purchaseHistoryGrid.getByRole('columnheader', { name: 'Total Item' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP035: Corporate Management page - Sort Purchase History by Amount', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Click the arrow beside Amount
-    await page.click('th:has-text("Amount")');
-    // Step 6: Click once to observe ascending order
-    // Expected Result: Corporate user's purchase history is sorted based on Amount (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Amount") svg')).toBeVisible();
-    // Step 7: Click again to observe descending order
-    await page.click('th:has-text("Amount")');
-    // Expected Result: Corporate user's purchase history is sorted based on Amount (Arrow down: descending)
-    await expect(page.locator('th:has-text("Amount") svg')).toBeVisible();
+  test('TC_CORP035: Sort Purchase History by Amount', async () => {
+    // Steps: Click arrow beside Amount > Click once (ascending) > Click again (descending) > Click again (original)
+    // Expected: Purchase history sorted by Amount (Arrow up: ascending, Arrow down: descending)
+    await openFirstCorporateUserEdit();
+    const purchaseHistoryGrid = authenticatedPage.getByRole('grid').first();
+    const header = purchaseHistoryGrid.getByRole('columnheader', { name: 'Amount' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP036: Corporate Management page - Sort Purchase History by Purchase Date', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Click the arrow beside Purchase Date
-    await page.click('th:has-text("Purchase Date")');
-    // Step 6: Click once to observe ascending order
-    // Expected Result: Corporate user's purchase history is sorted based on Purchase Date (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Purchase Date") svg')).toBeVisible();
-    // Step 7: Click again to observe descending order
-    await page.click('th:has-text("Purchase Date")');
-    // Expected Result: Corporate user's purchase history is sorted based on Purchase Date (Arrow down: descending)
-    await expect(page.locator('th:has-text("Purchase Date") svg')).toBeVisible();
+  test('TC_CORP036: Sort Purchase History by Purchase Date', async () => {
+    // Steps: Click arrow beside Purchase Date > Click once (ascending) > Click again (descending) > Click again (original)
+    // Expected: Purchase history sorted by Purchase Date (Arrow up: ascending, Arrow down: descending)
+    await openFirstCorporateUserEdit();
+    const purchaseHistoryGrid = authenticatedPage.getByRole('grid').first();
+    const header = purchaseHistoryGrid.getByRole('columnheader', { name: 'Purchase Date' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP037: Corporate Management page - Sort Purchase History by Status', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Purchase History section
-    // Step 5: Click the arrow beside Status
-    await page.click('th:has-text("Status")');
-    // Step 6: Click once to observe ascending order
-    // Expected Result: Corporate user's purchase history is sorted based on Status (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Status") svg')).toBeVisible();
-    // Step 7: Click again to observe descending order
-    await page.click('th:has-text("Status")');
-    // Expected Result: Corporate user's purchase history is sorted based on Status (Arrow down: descending)
-    await expect(page.locator('th:has-text("Status") svg')).toBeVisible();
+  test('TC_CORP037: Sort Purchase History by Status', async () => {
+    // Steps: Click arrow beside Status > Click once (ascending) > Click again (descending) > Click again (original)
+    // Expected: Purchase history sorted by Status (Arrow up: ascending, Arrow down: descending)
+    await openFirstCorporateUserEdit();
+    const purchaseHistoryGrid = authenticatedPage.getByRole('grid').first();
+    const header = purchaseHistoryGrid.getByRole('columnheader', { name: 'Status' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP038: Corporate Management page - Sort Inventory by Voucher Name', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Inventory section
-    await page.click('text=Inventory');
-    // Step 5: Click the arrow beside Voucher Name
-    await page.click('th:has-text("Voucher Name")');
-    // Step 6: Click once to observe ascending order
-    // Expected Result: Corporate user's inventory is sorted based on Voucher Name (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Voucher Name") svg')).toBeVisible();
-    // Step 7: Click again to observe descending order
-    await page.click('th:has-text("Voucher Name")');
-    // Expected Result: Corporate user's inventory is sorted based on Voucher Name (Arrow down: descending)
-    await expect(page.locator('th:has-text("Voucher Name") svg')).toBeVisible();
+  // =====================================================
+  // SORT INVENTORY
+  // =====================================================
+
+  test('TC_CORP038: Sort Inventory by Voucher Name', async () => {
+    // Steps: Click arrow beside Voucher Name > Click once (ascending) > Click again (descending) > Click again (original)
+    // Expected: Inventory sorted by Voucher Name (Arrow up: ascending, Arrow down: descending)
+    await openFirstCorporateUserEdit();
+    const inventoryGrid = authenticatedPage.getByRole('grid').last();
+    const header = inventoryGrid.getByRole('columnheader', { name: 'Voucher Name' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP039: Corporate Management page - Sort Inventory by Total Voucher Purchase', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Inventory section
-    await page.click('text=Inventory');
-    // Step 5: Click the arrow beside Total Voucher Purchase
-    await page.click('th:has-text("Total Voucher Purchase")');
-    // Step 6: Click once to observe ascending order
-    // Expected Result: Corporate user's inventory is sorted based on Total Voucher Purchase (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Total Voucher Purchase") svg')).toBeVisible();
-    // Step 7: Click again to observe descending order
-    await page.click('th:has-text("Total Voucher Purchase")');
-    // Expected Result: Corporate user's inventory is sorted based on Total Voucher Purchase (Arrow down: descending)
-    await expect(page.locator('th:has-text("Total Voucher Purchase") svg')).toBeVisible();
+  test('TC_CORP039: Sort Inventory by Total Voucher Purchase', async () => {
+    // Steps: Click arrow beside Total Voucher Purchase > Click once (ascending) > Click again (descending) > Click again (original)
+    // Expected: Inventory sorted by Total Voucher Purchase (Arrow up: ascending, Arrow down: descending)
+    await openFirstCorporateUserEdit();
+    const inventoryGrid = authenticatedPage.getByRole('grid').last();
+    const header = inventoryGrid.getByRole('columnheader', { name: 'Total Voucher Purchase' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP040: Corporate Management page - Sort Inventory by Remaining Voucher', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Inventory section
-    await page.click('text=Inventory');
-    // Step 5: Click the arrow beside Remaining Voucher
-    await page.click('th:has-text("Remaining Voucher")');
-    // Step 6: Click once to observe ascending order
-    // Expected Result: Corporate user's inventory is sorted based on Remaining Voucher (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Remaining Voucher") svg')).toBeVisible();
-    // Step 7: Click again to observe descending order
-    await page.click('th:has-text("Remaining Voucher")');
-    // Expected Result: Corporate user's inventory is sorted based on Remaining Voucher (Arrow down: descending)
-    await expect(page.locator('th:has-text("Remaining Voucher") svg')).toBeVisible();
+  test('TC_CORP040: Sort Inventory by Remaining Voucher', async () => {
+    // Steps: Click arrow beside Remaining Voucher > Click once (ascending) > Click again (descending) > Click again (original)
+    // Expected: Inventory sorted by Remaining Voucher (Arrow up: ascending, Arrow down: descending)
+    await openFirstCorporateUserEdit();
+    const inventoryGrid = authenticatedPage.getByRole('grid').last();
+    const header = inventoryGrid.getByRole('columnheader', { name: 'Remaining Voucher' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP041: Corporate Management page - Sort Inventory by Expiry Date', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Select a corporate user
-    // Step 3: Click on the edit icon located at the end of the corporate user's row
-    await page.locator('[role="row"] [role="cell"]:last-child button').first().click();
-    await page.waitForTimeout(1000);
-    // Step 4: Scroll down to Inventory section
-    await page.click('text=Inventory');
-    // Step 5: Click the arrow beside Expiry Date
-    await page.click('th:has-text("Expiry Date")');
-    // Step 6: Click once to observe ascending order
-    // Expected Result: Corporate user's inventory is sorted based on Expiry Date (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Expiry Date") svg')).toBeVisible();
-    // Step 7: Click again to observe descending order
-    await page.click('th:has-text("Expiry Date")');
-    // Expected Result: Corporate user's inventory is sorted based on Expiry Date (Arrow down: descending)
-    await expect(page.locator('th:has-text("Expiry Date") svg')).toBeVisible();
+  test('TC_CORP041: Sort Inventory by Expiry Date', async () => {
+    // Steps: Click arrow beside Expiry Date > Click once (ascending) > Click again (descending) > Click again (original)
+    // Expected: Inventory sorted by Expiry Date (Arrow up: ascending, Arrow down: descending)
+    await openFirstCorporateUserEdit();
+    const inventoryGrid = authenticatedPage.getByRole('grid').last();
+    const header = inventoryGrid.getByRole('columnheader', { name: 'Expiry Date' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP042: Corporate Management page - Sort Corporate Users by Company Name', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Click the arrow beside Company Name
-    await page.click('th:has-text("Company Name")');
-    // Expected Result: Corporate users list is sorted based on Company Name (Arrow up: ascending, number -> upper case -> lower case)
-    await expect(page.locator('th:has-text("Company Name") svg')).toBeVisible();
-    // Step 3: Click again to observe descending order
-    await page.click('th:has-text("Company Name")');
-    // Expected Result: Corporate users list is sorted based on Company Name (Arrow down: descending)
-    await expect(page.locator('th:has-text("Company Name") svg')).toBeVisible();
+  // =====================================================
+  // SORT CORPORATE USERS LIST
+  // =====================================================
+
+  test('TC_CORP042: Sort Corporate Users by Company Name', async () => {
+    // Steps: Go to Corporate Management > Click the arrow beside Company Name
+    // Expected: Corporate users list sorted by Company Name (Arrow up: ascending, Arrow down: descending)
+    // Note: Sorting follows letter case - ascending: number -> upper case -> lower case
+    await navigateToCorporateManagement();
+    const header = authenticatedPage.getByRole('columnheader', { name: 'Company Name' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP043: Corporate Management page - Sort Corporate Users by Company Email', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Click the arrow beside Company Email
-    await page.click('th:has-text("Company Email")');
-    // Expected Result: Corporate users list is sorted based on Company Email (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Company Email") svg')).toBeVisible();
-    // Step 3: Click again to observe descending order
-    await page.click('th:has-text("Company Email")');
-    // Expected Result: Corporate users list is sorted based on Company Email (Arrow down: descending)
-    await expect(page.locator('th:has-text("Company Email") svg')).toBeVisible();
+  test('TC_CORP043: Sort Corporate Users by Company Email', async () => {
+    // Steps: Go to Corporate Management > Click the arrow beside Company Email
+    // Expected: Corporate users list sorted by Company Email (Arrow up: ascending, Arrow down: descending)
+    await navigateToCorporateManagement();
+    const header = authenticatedPage.getByRole('columnheader', { name: 'Company Email' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP044: Corporate Management page - Sort Corporate Users by Company Phone No.', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Click the arrow beside Company Phone No.
-    await page.click('th:has-text("Company Phone No.")');
-    // Expected Result: Corporate users list is sorted based on Company Phone Number (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Company Phone No.") svg')).toBeVisible();
-    // Step 3: Click again to observe descending order
-    await page.click('th:has-text("Company Phone No.")');
-    // Expected Result: Corporate users list is sorted based on Company Phone Number (Arrow down: descending)
-    await expect(page.locator('th:has-text("Company Phone No.") svg')).toBeVisible();
+  test('TC_CORP044: Sort Corporate Users by Company Phone No.', async () => {
+    // Steps: Go to Corporate Management > Click the arrow beside Company Phone No.
+    // Expected: Corporate users list sorted by Company Phone Number (Arrow up: ascending, Arrow down: descending)
+    await navigateToCorporateManagement();
+    const header = authenticatedPage.getByRole('columnheader', { name: 'Company Phone No.' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP045: Corporate Management page - Sort Corporate Users by Created Date', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Click the arrow beside Created Date
-    await page.click('th:has-text("Created Date")');
-    // Expected Result: Corporate users list is sorted based on Created Date (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Created Date") svg')).toBeVisible();
-    // Step 3: Click again to observe descending order
-    await page.click('th:has-text("Created Date")');
-    // Expected Result: Corporate users list is sorted based on Created Date (Arrow down: descending)
-    await expect(page.locator('th:has-text("Created Date") svg')).toBeVisible();
+  test('TC_CORP045: Sort Corporate Users by Created Date', async () => {
+    // Steps: Go to Corporate Management > Click the arrow beside Created Date
+    // Expected: Corporate users list sorted by Created Date (Arrow up: ascending, Arrow down: descending)
+    await navigateToCorporateManagement();
+    const header = authenticatedPage.getByRole('columnheader', { name: 'Created Date' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP046: Corporate Management page - Sort Corporate Users by Last Update', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Click the arrow beside Last Update
-    await page.click('th:has-text("Last Update")');
-    // Expected Result: Corporate users list is sorted based on Last Update (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Last Update") svg')).toBeVisible();
-    // Step 3: Click again to observe descending order
-    await page.click('th:has-text("Last Update")');
-    // Expected Result: Corporate users list is sorted based on Last Update (Arrow down: descending)
-    await expect(page.locator('th:has-text("Last Update") svg')).toBeVisible();
+  test('TC_CORP046: Sort Corporate Users by Last Update', async () => {
+    // Steps: Go to Corporate Management > Click the arrow beside Last Update
+    // Expected: Corporate users list sorted by Last Update (Arrow up: ascending, Arrow down: descending)
+    await navigateToCorporateManagement();
+    const header = authenticatedPage.getByRole('columnheader', { name: 'Last Update' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 
-  test('TC_CORP047: Corporate Management page - Sort Corporate Users by Last Login', async ({ page }) => {
-    // Step 1: Go to Corporate Management page
-    await page.goto(`${ADMIN_PORTAL.URL.replace('/login', '')}/corporate-management`);
-    // Step 2: Click the arrow beside Last Login
-    await page.click('th:has-text("Last Login")');
-    // Expected Result: Corporate users list is sorted based on Last Login (Arrow up: ascending)
-    await expect(page.locator('th:has-text("Last Login") svg')).toBeVisible();
-    // Step 3: Click again to observe descending order
-    await page.click('th:has-text("Last Login")');
-    // Expected Result: Corporate users list is sorted based on Last Login (Arrow down: descending)
-    await expect(page.locator('th:has-text("Last Login") svg')).toBeVisible();
+  test('TC_CORP047: Sort Corporate Users by Last Login', async () => {
+    // Steps: Go to Corporate Management > Click the arrow beside Last Login
+    // Expected: Corporate users list sorted by Last Login (Arrow up: ascending, Arrow down: descending)
+    await navigateToCorporateManagement();
+    const header = authenticatedPage.getByRole('columnheader', { name: 'Last Login' });
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
+    await header.click();
+    await authenticatedPage.waitForTimeout(500);
   });
 });

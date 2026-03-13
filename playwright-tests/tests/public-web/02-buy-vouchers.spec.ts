@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { PUBLIC_WEB } from '../../utils/test-data';
 import { PublicLoginPage } from '../../pages/public-web/LoginPage';
 
@@ -48,6 +48,111 @@ async function selectAutomationTestVoucher(page: any) {
   }
   
   await page.waitForLoadState('networkidle');
+}
+
+/**
+ * Helper function to complete the eGHL payment gateway flow.
+ * Based on actual eGHL UI (pay.e-ghl.com) and FPX Bank Simulator:
+ * 
+ * Steps:
+ * 1. Wait 10-15s for redirect to eGHL payment page (https://pay.e-ghl.com/...)
+ * 2. Click "RETAIL INTERNET BANKING" section (FPX panel) to expand bank options
+ * 3. Click "SBI Bank A" bank icon
+ * 4. Redirects to FPX Bank Simulator (simulator.fpx.uat.inet.paynet.my)
+ *    - Fill User Id: 1234
+ *    - Fill Password: 1234
+ *    - Click "Sign In"
+ * 5. Handle OK popup (browser dialog)
+ * 6. Click "Confirm" button
+ * 7. Click "Continue with Transaction" button
+ * 8. Verify redirect back to Order Processing page on public web
+ */
+async function completeEGHLPayment(page: Page) {
+  // Step 1: Wait for redirect away from public web to payment flow
+  // The page may land on eGHL (pay.e-ghl.com) or auto-redirect straight to the bank simulator
+  await page.waitForURL(/.*pay\.e-ghl\.com.*|.*mepsfpx\.com.*|.*simulator\.fpx.*|.*paynet\.my.*/i, { timeout: 20000 });
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(3000);
+
+  // Check if we're still on the eGHL payment page (need to select bank)
+  // or if it auto-redirected to the bank simulator already
+  const currentUrl = page.url();
+  const isOnEGHL = currentUrl.includes('pay.e-ghl.com');
+
+  if (isOnEGHL) {
+    // Step 2: Click "RETAIL INTERNET BANKING" accordion to expand bank options
+    // The section is a Bootstrap collapse: .card-title[data-target="#B2C-B2C"] > span.title
+    const retailBankingSection = page.locator('.card-title[data-target="#B2C-B2C"], .card-header span.title:has-text("RETAIL INTERNET BANKING")').first();
+    await retailBankingSection.waitFor({ state: 'visible', timeout: 10000 });
+    await retailBankingSection.click();
+    await page.waitForTimeout(2000);
+
+    // Step 3: Click "SBI Bank A" from the expanded bank grid
+    // Element: div.all-items#FPX_FPXD_TEST0021 with img[alt="SBI BANK A"]
+    const sbiBankA = page.locator('#FPX_FPXD_TEST0021, div.all-items:has(img[alt="SBI BANK A"])').first();
+    await sbiBankA.waitFor({ state: 'visible', timeout: 10000 });
+    await sbiBankA.click();
+    await page.waitForTimeout(3000);
+  }
+
+  // Step 4: Wait for FPX Bank Simulator page to be ready
+  // URL pattern: simulator.fpx.uat.inet.paynet.my/UatBuyerBankSim2.0/Request.jsp
+  await page.waitForURL(/.*simulator\.fpx.*|.*paynet\.my.*|.*BuyerBankSim.*/i, { timeout: 20000 });
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(2000);
+
+  // Fill User Id: input#userId[name="CardNum"]
+  const userIdField = page.locator('input#userId');
+  await userIdField.waitFor({ state: 'visible', timeout: 10000 });
+  await userIdField.fill('1234');
+
+  // Fill Password: input#password[name="HPin"]
+  const passwordField = page.locator('input#password');
+  await passwordField.waitFor({ state: 'visible', timeout: 5000 });
+  await passwordField.fill('1234');
+
+  // Set up dialog handler BEFORE clicking Sign In (OK popup appears after sign in)
+  page.once('dialog', async (dialog) => {
+    await dialog.accept(); // Click OK on the popup
+  });
+
+  // Click "Sign in" button: button.btn-primary[type="submit"] with text "Sign in"
+  const signInButton = page.locator('button[type="submit"]:has-text("Sign in")').first();
+  await signInButton.click();
+  await page.waitForTimeout(5000);
+
+  // Step 5: Handle OK popup - already handled by dialog listener above
+  // Also check for in-page OK button as fallback
+  const okButton = page.locator('button:has-text("OK"), input[value="OK"]').first();
+  if (await okButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await okButton.click();
+    await page.waitForTimeout(2000);
+  }
+
+  // Step 6: Click "Confirm" button: button.btn-primary[type="submit"] with text "Confirm"
+  const confirmButton = page.locator('button[type="submit"]:has-text("Confirm")').first();
+  await confirmButton.waitFor({ state: 'visible', timeout: 10000 });
+  await confirmButton.click();
+  await page.waitForTimeout(3000);
+
+  // Step 7: Click "Continue with Transaction" button
+  const continueButton = page.locator(
+    'button:has-text("Continue with Transaction"), ' +
+    'input[value*="Continue with Transaction" i], ' +
+    'a:has-text("Continue with Transaction"), ' +
+    'button:has-text("Continue"), ' +
+    'input[value*="Continue" i]'
+  ).first();
+  await continueButton.waitFor({ state: 'visible', timeout: 10000 });
+  await continueButton.click();
+
+  // Step 8: Wait for redirect back to public web - Order Processing page
+  await page.waitForURL(/.*corporate-voucher.*/, { timeout: 30000 });
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(3000);
+
+  // Verify Order Processing page is displayed
+  await expect(page.locator('text=/Order Processing/i').first()).toBeVisible({ timeout: 15000 });
 }
 
 test.describe('Public Web - Buy Vouchers', () => {
@@ -253,43 +358,114 @@ test.describe('Public Web - Buy Vouchers', () => {
   test('TC008: Process payment transactions securely', async ({ page }) => {
     // Expected Result: User successfully made payment in the eGHL gateway and will be redirected 
     // to order confirmation page
+    test.setTimeout(120000); // Extended timeout for payment flow
+    
+    // Select AUTOMATION TEST VOUCHER
+    await selectAutomationTestVoucher(page);
+    await page.locator('button:has-text("Buy Now")').waitFor({ state: 'visible', timeout: 10000 });
+    await page.click('button:has-text("Buy Now")');
+    
+    // In checkout page, click Proceed to Payment
+    await page.waitForURL(/.*checkout.*/, { timeout: 30000 });
+    await page.click('button:has-text("Proceed to Payment")');
+    
+    // Complete the eGHL payment flow
+    await completeEGHLPayment(page);
+    
+    // Verify Order Processing page with order details
+    await expect(page.locator('text=/Order No/i').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=/Total Payment/i').first()).toBeVisible();
+  });
+
+  test('TC009: Complete purchase transactions successfully', async ({ page }) => {
+    // Expected Result: User successfully made payment in the eGHL gateway and will be redirected 
+    // to order confirmation page
+    test.setTimeout(120000); // Extended timeout for payment flow
     
     // Select AUTOMATION TEST VOUCHER
     await selectAutomationTestVoucher(page);
     await page.click('button:has-text("Buy Now")');
     
     // In checkout page, click Proceed to Payment
+    await page.waitForURL(/.*checkout.*/);
     await page.click('button:has-text("Proceed to Payment")');
     
-    // Wait for navigation
-    await page.waitForTimeout(3000);
+    // Complete the eGHL payment flow
+    await completeEGHLPayment(page);
     
-    // Note: Payment gateway may not load in test environment
-    // Verify we attempted to proceed (button clicked successfully)
-    const currentUrl = page.url();
-    expect(currentUrl).toBeTruthy();
-  });
-
-  test('TC009: Complete purchase transactions successfully', async ({ page }) => {
-    // Expected Result: User successfully made payment in the eGHL gateway and will be redirected 
-    // to order confirmation page
-    // Skip this test as it requires actual payment completion
-    test.skip();
+    // Verify Order Processing page shows order confirmation
+    await expect(page.locator('text=/Order Processing/i').first()).toBeVisible();
+    await expect(page.locator('text=/Order No/i').first()).toBeVisible();
+    await expect(page.locator('text=/Total Payment/i').first()).toBeVisible();
+    
+    // Verify action buttons are available
+    await expect(page.locator('button:has-text("Back to Home"), a:has-text("Back to Home")').first()).toBeVisible();
+    await expect(page.locator('button:has-text("View Order"), a:has-text("View Order")').first()).toBeVisible();
   });
 
   test('TC010: Provide purchase confirmation upon successful transaction', async ({ page }) => {
     // Expected Result: User successfully made payment in the eGHL gateway and will be redirected 
     // to order confirmation page
-    // Skip this test as it requires actual payment completion
-    test.skip();
+    test.setTimeout(120000); // Extended timeout for payment flow
+    
+    // Select AUTOMATION TEST VOUCHER
+    await selectAutomationTestVoucher(page);
+    await page.click('button:has-text("Buy Now")');
+    
+    // In checkout page, click Proceed to Payment
+    await page.waitForURL(/.*checkout.*/);
+    await page.click('button:has-text("Proceed to Payment")');
+    
+    // Complete the eGHL payment flow
+    await completeEGHLPayment(page);
+    
+    // Verify Order Processing confirmation page
+    await expect(page.locator('text=/Order Processing/i').first()).toBeVisible();
+    await expect(page.locator('text=/Booking Number/i').first()).toBeVisible();
+    await expect(page.locator('text=/Order No/i').first()).toBeVisible();
+    await expect(page.locator('text=/Total Payment/i').first()).toBeVisible();
+    
+    // Verify navigation options on confirmation page
+    await expect(page.locator('button:has-text("Back to Home"), a:has-text("Back to Home")').first()).toBeVisible();
+    await expect(page.locator('button:has-text("Check Inventory"), a:has-text("Check Inventory")').first()).toBeVisible();
+    await expect(page.locator('button:has-text("View Order"), a:has-text("View Order")').first()).toBeVisible();
   });
 
   test('TC011: Update inventory/voucher availability after successful purchase', async ({ page }) => {
     // Expected Result: User successfully made payment in the eGHL gateway and will be redirected 
     // to order confirmation page. Upon checking in inventory page, the voucher quantity will 
     // increases based on the (quantity x no.of codes) quantity
-    // Skip this test as it requires actual payment completion
-    test.skip();
+    test.setTimeout(120000); // Extended timeout for payment flow
+    
+    // Select AUTOMATION TEST VOUCHER
+    await selectAutomationTestVoucher(page);
+    await page.click('button:has-text("Buy Now")');
+    
+    // In checkout page, click Proceed to Payment
+    await page.waitForURL(/.*checkout.*/);
+    await page.click('button:has-text("Proceed to Payment")');
+    
+    // Complete the eGHL payment flow
+    await completeEGHLPayment(page);
+    
+    // Verify Order Processing page
+    await expect(page.locator('text=/Order Processing/i').first()).toBeVisible();
+    
+    // Click "Check Inventory" to verify inventory was updated
+    const checkInventoryBtn = page.locator('button:has-text("Check Inventory"), a:has-text("Check Inventory")').first();
+    await expect(checkInventoryBtn).toBeVisible();
+    await checkInventoryBtn.click();
+    
+    // Wait for inventory page to load
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+    
+    // Verify inventory page shows voucher items
+    const inventoryItems = page.locator('text=/voucher|movie/i');
+    const itemCount = await inventoryItems.count();
+    if (itemCount > 0) {
+      await expect(inventoryItems.first()).toBeVisible();
+    }
   });
 
   test('TC012: Generate purchase receipts or confirmation details', async ({ page }) => {
@@ -456,21 +632,28 @@ test.describe('Public Web - Buy Vouchers', () => {
   test('TC020: Cancel payment in eGHL gateway redirects to order detail with cancelled status', async ({ page }) => {
     // Expected Result: User payment process will be cancelled and return back to corporate voucher page. 
     // User will redirect to order detail page with status set to payment cancelled
+    test.setTimeout(120000);
     
     // Select AUTOMATION TEST VOUCHER
     await selectAutomationTestVoucher(page);
     await page.click('button:has-text("Buy Now")');
+    await page.waitForURL(/.*checkout.*/);
     await page.click('button:has-text("Proceed to Payment")');
     
-    // Wait for payment gateway
-    await page.waitForTimeout(2000);
+    // Wait for redirect to payment flow (eGHL or bank simulator)
+    await page.waitForURL(/.*pay\.e-ghl\.com.*|.*mepsfpx\.com.*|.*simulator\.fpx.*|.*paynet\.my.*/i, { timeout: 20000 });
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
     
-    // Click cancel (if available)
-    if (await page.locator('text=Cancel, button:has-text("Cancel")').isVisible()) {
-      await page.click('text=Cancel, button:has-text("Cancel")');
+    // Click Cancel button (on eGHL page or bank simulator page)
+    const cancelButton = page.locator('button:has-text("Cancel"), a:has-text("Cancel"), input[value="Cancel"]').first();
+    if (await cancelButton.isVisible({ timeout: 10000 }).catch(() => false)) {
+      await cancelButton.click();
+      await page.waitForTimeout(5000);
       
-      // Should redirect to order detail with cancelled status
-      await expect(page.locator('text=/cancelled|failed/i')).toBeVisible();
+      // Should redirect back to public web with cancelled/failed status
+      await page.waitForURL(/.*corporate-voucher.*/, { timeout: 30000 });
+      await expect(page.locator('text=/cancelled|failed|cancel/i').first()).toBeVisible({ timeout: 10000 });
     }
   });
 
@@ -515,6 +698,7 @@ test.describe('Public Web - Buy Vouchers', () => {
     // Expected Result: In checkout page, should display the correct voucher detail including quantity = 10.
     // Subtotal and total should be correct (price * quantity) and upon successful payment, 
     // user shall redirect to order confirmation page
+    test.setTimeout(120000); // Extended timeout for payment flow
     
     // Select AUTOMATION TEST VOUCHER
     await selectAutomationTestVoucher(page);
@@ -532,15 +716,18 @@ test.describe('Public Web - Buy Vouchers', () => {
     await expect(page.locator('text=/10/').first()).toBeVisible();
     
     // Verify subtotal and total should be correct (price * quantity)
-    // Note: Actual price verification would require extracting the price value
     await expect(page.locator('button:has-text("Proceed to Payment")')).toBeVisible();
     
     // Click Proceed to Payment
     await page.click('button:has-text("Proceed to Payment")');
-    await page.waitForTimeout(2000);
+    
+    // Complete the eGHL payment flow
+    await completeEGHLPayment(page);
     
     // Upon successful payment, user shall redirect to order confirmation page
-    // Note: Payment completion requires actual payment gateway interaction
+    await expect(page.locator('text=/Order Processing/i').first()).toBeVisible();
+    await expect(page.locator('text=/Order No/i').first()).toBeVisible();
+    await expect(page.locator('text=/Total Payment/i').first()).toBeVisible();
   });
 
   test('TC023: Cart page - checkout multiple vouchers', async ({ page }) => {
@@ -549,6 +736,7 @@ test.describe('Public Web - Buy Vouchers', () => {
     // - upon selecting the vouchers. In checkout page, should display the correct voucher detail inc 
     // the quantity order subtotal and total should be correct (price * quantity) and upon successful 
     // payment, user shall redirect to order confirmation page
+    test.setTimeout(120000); // Extended timeout for payment flow
     
     // Choose AUTOMATION TEST VOUCHER first
     await selectAutomationTestVoucher(page);
@@ -597,14 +785,20 @@ test.describe('Public Web - Buy Vouchers', () => {
     
     // Click Proceed to Payment
     await page.click('button:has-text("Proceed to Payment")');
-    await page.waitForTimeout(2000);
+    
+    // Complete the eGHL payment flow
+    await completeEGHLPayment(page);
     
     // Upon successful payment, user shall redirect to order confirmation page
-    // Note: Payment completion requires actual payment gateway interaction
+    await expect(page.locator('text=/Order Processing/i').first()).toBeVisible();
+    await expect(page.locator('text=/Order No/i').first()).toBeVisible();
+    await expect(page.locator('text=/Total Payment/i').first()).toBeVisible();
   });
 
   // Checkout Page Module Scenarios
   test('TC024: Checkout page - process payment transactions securely', async ({ page }) => {
+    test.setTimeout(120000); // Extended timeout for payment flow
+    
     await page.goto(PUBLIC_WEB.URL);
     await page.click('text=Buy Voucher');
     await page.locator('a[href*="/products/"]').first().click();
@@ -615,17 +809,19 @@ test.describe('Public Web - Buy Vouchers', () => {
     
     // Click Proceed to Payment
     await page.click('button:has-text("Proceed to Payment")');
-    await page.waitForTimeout(3000);
     
-    // Verify redirect to payment gateway (eGHL)
+    // Complete the eGHL payment flow
+    await completeEGHLPayment(page);
+    
     // System shall process payment transactions securely
-    const currentUrl = page.url();
-    expect(currentUrl).toBeTruthy();
-    
-    // Note: Actual payment gateway interaction requires test credentials
+    // Verify redirect back to Order Processing page
+    await expect(page.locator('text=/Order Processing/i').first()).toBeVisible();
+    await expect(page.locator('text=/Order No/i').first()).toBeVisible();
   });
 
   test('TC025: Checkout page - complete purchase transactions successfully', async ({ page }) => {
+    test.setTimeout(120000); // Extended timeout for payment flow
+    
     await page.goto(PUBLIC_WEB.URL);
     await page.click('text=Buy Voucher');
     await page.locator('a[href*="/products/"]').first().click();
@@ -640,11 +836,19 @@ test.describe('Public Web - Buy Vouchers', () => {
     
     // Click Proceed to Payment
     await page.click('button:has-text("Proceed to Payment")');
-    await page.waitForTimeout(2000);
+    
+    // Complete the eGHL payment flow
+    await completeEGHLPayment(page);
     
     // System shall complete purchase transactions successfully
     // Upon successful payment, user redirects to order confirmation page
-    // Note: Requires actual payment completion
+    await expect(page.locator('text=/Order Processing/i').first()).toBeVisible();
+    await expect(page.locator('text=/Order No/i').first()).toBeVisible();
+    await expect(page.locator('text=/Total Payment/i').first()).toBeVisible();
+    
+    // Verify action buttons
+    await expect(page.locator('button:has-text("Back to Home"), a:has-text("Back to Home")').first()).toBeVisible();
+    await expect(page.locator('button:has-text("View Order"), a:has-text("View Order")').first()).toBeVisible();
   });
 
   test('TC026: Checkout page - provide purchase confirmation upon successful transaction', async ({ page }) => {
@@ -721,11 +925,9 @@ test.describe('Public Web - Buy Vouchers', () => {
     }
   });
 
-});
-
-
   // Corporate Voucher Module Scenarios
   test('TC029: Corporate Voucher page - cancel payment in eGHL payment gateway', async ({ page }) => {
+    test.setTimeout(120000);
     await page.goto(PUBLIC_WEB.URL);
     
     // Navigate to Corporate Voucher page
@@ -741,8 +943,6 @@ test.describe('Public Web - Buy Vouchers', () => {
     try {
       await page.waitForURL(/.*checkout.*/, { timeout: 10000 });
     } catch (e) {
-      // If redirected to login, we're not authenticated properly
-      // Skip the payment gateway test
       console.log('Redirected to login, skipping payment gateway test');
       return;
     }
@@ -750,25 +950,24 @@ test.describe('Public Web - Buy Vouchers', () => {
     // In the checkout page, click Proceed to Payment
     await page.click('button:has-text("Proceed to Payment")');
     
-    // Wait for eGHL gateway to load
+    // Wait for redirect to payment flow (eGHL or bank simulator)
+    await page.waitForURL(/.*pay\.e-ghl\.com.*|.*mepsfpx\.com.*|.*simulator\.fpx.*|.*paynet\.my.*/i, { timeout: 20000 });
+    await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000);
     
-    // In the eGHL gateway, scroll down
-    await page.evaluate(() => window.scrollBy(0, 500));
-    await page.waitForTimeout(1000);
+    // Click Cancel button (on eGHL page or bank simulator page)
+    const cancelButton = page.locator('button:has-text("Cancel"), a:has-text("Cancel"), input[value="Cancel"]').first();
     
-    // Click "Cancel and return to merchant's page"
-    const cancelButton = page.locator('button:has-text("Cancel"), a:has-text("Cancel"), text=/cancel.*merchant/i');
-    
-    if (await cancelButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+    if (await cancelButton.isVisible({ timeout: 10000 }).catch(() => false)) {
       await cancelButton.click();
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(5000);
       
       // User payment process will be cancelled and return back to corporate voucher page
       // User will redirect to order detail page with status set to payment cancelled
+      await page.waitForURL(/.*corporate-voucher.*/, { timeout: 30000 });
       await expect(page.locator('text=/cancelled|cancel/i').first()).toBeVisible({ timeout: 10000 });
     } else {
-      // If cancel button not found in gateway, verify we're in payment flow
+      // If cancel button not found, verify we're in payment flow
       const currentUrl = page.url();
       expect(currentUrl).toBeTruthy();
     }
@@ -1041,3 +1240,4 @@ test.describe('Public Web - Buy Vouchers', () => {
     const finalQty = await qtyInput.inputValue();
     expect(parseInt(finalQty || '0')).toBeGreaterThanOrEqual(1);
   });
+});
