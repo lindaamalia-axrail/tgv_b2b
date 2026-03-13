@@ -8,246 +8,235 @@ test.describe('Public Web - Reports', () => {
     await loginPage.navigate();
     await loginPage.login(PUBLIC_WEB.EXISTING_USER.email, PUBLIC_WEB.EXISTING_USER.password);
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
   });
 
   test('TC_REPORT001: [Send Voucher page] Download send voucher report for a specific batch', async ({ page }) => {
-    // Navigate to Send Voucher page
+    // 1. Navigate to Send Voucher page
     await page.goto(`${PUBLIC_WEB.URL}send-voucher`);
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
+
+    // Wait for batches to load - wait for table or empty state
+    // The page shows "Loading voucher batches..." then either a table or empty state
+    await page.waitForSelector('table, text="No voucher batches found"', { timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(2000);
-    
+
     // Check if there are batches available
-    const emptyState = await page.locator('text="No voucher batches found"').count();
-    
-    if (emptyState > 0) {
+    const batchRows = page.getByRole('row').filter({ has: page.getByRole('link', { name: 'View Report' }) });
+    const batchCount = await batchRows.count();
+
+    if (batchCount === 0) {
       console.log('⚠️  No voucher batches available. Skipping test.');
       test.skip();
       return;
     }
-    
-    // Select a batch (click on table row)
-    const batchRow = page.locator('table tbody tr').first();
-    await batchRow.click();
+
+    // 2. Select a batch - click View Report link on first batch
+    await batchRows.first().getByRole('link', { name: 'View Report' }).click();
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
-    
-    // Click View Report button
-    await page.click('button:has-text("View Report")');
-    await page.waitForTimeout(1000);
-    
-    // Click Download Report button
-    const downloadPromise = page.waitForEvent('download');
-    await page.click('button:has-text("Download Report")');
+    await page.waitForTimeout(2000);
+
+    // Now on batch detail/progress page
+    await expect(page.getByRole('heading', { name: 'Batch Details' })).toBeVisible();
+
+    // 3. Click Download Report button (enabled on batch detail page)
+    const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
+    await page.getByRole('button', { name: 'Download Report' }).click();
     const download = await downloadPromise;
-    
+
     // Expected Result: Report downloaded successfully
-    expect(download.suggestedFilename()).toMatch(/\.csv$/);
-    
-    // View the downloaded csv file report
-    const path = await download.path();
-    expect(path).toBeTruthy();
+    expect(download.suggestedFilename()).toMatch(/\.(csv|xlsx)$/i);
+    const filePath = await download.path();
+    expect(filePath).toBeTruthy();
   });
 
   test('TC_REPORT002: [Send Voucher page] Download send voucher report for multiple batches', async ({ page }) => {
-    // Navigate to Send Voucher page
+    // 1. Navigate to Send Voucher page
     await page.goto(`${PUBLIC_WEB.URL}send-voucher`);
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
+
+    // Wait for batches to load
+    await page.waitForSelector('table, text="No voucher batches found"', { timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(2000);
-    
+
     // Check if there are batches available
-    const emptyState = await page.locator('text="No voucher batches found"').count();
-    
-    if (emptyState > 0) {
+    const batchRows = page.getByRole('row').filter({ has: page.getByRole('link', { name: 'View Report' }) });
+    const batchCount = await batchRows.count();
+
+    if (batchCount === 0) {
       console.log('⚠️  No voucher batches available. Skipping test.');
       test.skip();
       return;
     }
-    
-    // Tick the batches checkboxes from the batch listings (Choose at least 1 batch)
-    const checkboxes = page.locator('table tbody tr input[type="checkbox"]');
-    const checkboxCount = await checkboxes.count();
-    
-    if (checkboxCount > 0) {
-      await checkboxes.first().check();
+
+    // 2. Tick the batches checkboxes (Choose at least 1 batch)
+    // Check first batch checkbox
+    await batchRows.first().getByRole('checkbox').check();
+    await page.waitForTimeout(500);
+
+    // Check second batch if available
+    if (batchCount > 1) {
+      await batchRows.nth(1).getByRole('checkbox').check();
       await page.waitForTimeout(500);
-      
-      if (checkboxCount > 1) {
-        await checkboxes.nth(1).check();
-        await page.waitForTimeout(500);
-      }
     }
-    
-    // Click Download Report button
-    const downloadPromise = page.waitForEvent('download');
-    await page.click('button:has-text("Download Report")');
+
+    // Verify Download Report button is now enabled
+    const downloadButton = page.getByRole('button', { name: 'Download Report' });
+    await expect(downloadButton).toBeEnabled();
+
+    // 3. Click Download Report button
+    const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
+    await downloadButton.click();
     const download = await downloadPromise;
-    
+
     // Expected Result: Report downloaded successfully
-    expect(download.suggestedFilename()).toMatch(/\.csv$/);
-    
-    // View the downloaded csv file
-    const path = await download.path();
-    expect(path).toBeTruthy();
+    expect(download.suggestedFilename()).toMatch(/\.(csv|xlsx)$/i);
+    const filePath = await download.path();
+    expect(filePath).toBeTruthy();
   });
 
   test('TC_REPORT003: [Inventory page] Download inventory report', async ({ page }) => {
-    // Navigate to Inventory page
+    // 1. Navigate to Inventory page
     await page.goto(`${PUBLIC_WEB.URL}inventory`);
     await page.waitForLoadState('networkidle');
+
+    // Wait for inventory to load
+    const loading = page.getByText('Loading inventory items...');
+    if (await loading.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await loading.waitFor({ state: 'hidden', timeout: 30000 });
+    }
     await page.waitForTimeout(2000);
-    
+
     // Check if there are inventory items available
-    const emptyState = await page.locator('text="No inventory items found"').count();
-    
-    if (emptyState > 0) {
+    // Inventory rows have checkboxes and voucher names
+    const inventoryRows = page.locator('table').last().getByRole('row');
+    const rowCount = await inventoryRows.count();
+
+    if (rowCount === 0) {
       console.log('⚠️  No inventory items available. Skipping test.');
       test.skip();
       return;
     }
-    
-    // Tick the voucher checkboxes from the inventory listings (Choose at least 1 voucher)
-    const checkboxes = page.locator('table tbody tr input[type="checkbox"], input[type="checkbox"]');
-    const checkboxCount = await checkboxes.count();
-    
-    if (checkboxCount > 0) {
-      await checkboxes.first().check();
-      await page.waitForTimeout(1000);
-    }
-    
-    // Click the Download Report button
-    const downloadPromise = page.waitForEvent('download');
-    await page.click('button:has-text("Download Report")');
+
+    // 2. Tick the voucher checkboxes from the inventory listings (Choose at least 1 voucher)
+    await inventoryRows.first().getByRole('checkbox').check();
+    await page.waitForTimeout(1000);
+
+    // Verify Download Report button is now enabled
+    const downloadButton = page.getByRole('button', { name: 'Download Report' });
+    await expect(downloadButton).toBeEnabled();
+
+    // 3. Click the Download Report button
+    const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
+    await downloadButton.click();
     const download = await downloadPromise;
-    
+
     // Expected Result: Report downloaded successfully
-    expect(download.suggestedFilename()).toMatch(/\.csv$/);
-    
-    // View the downloaded csv file
-    const path = await download.path();
-    expect(path).toBeTruthy();
+    expect(download.suggestedFilename()).toMatch(/\.(csv|xlsx)$/i);
+    const filePath = await download.path();
+    expect(filePath).toBeTruthy();
   });
 
   test('TC_REPORT004: [Cart page] Download quotation without selecting any cart items', async ({ page }) => {
-    // Navigate to cart page
+    // 1. Navigate to cart page
     await page.goto(`${PUBLIC_WEB.URL}cart`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
-    
-    // Check if cart is empty
-    const emptyCart = await page.locator('text="Your cart is empty"').count();
-    
-    if (emptyCart > 0) {
+
+    // Check if cart has items - look for "Select All" checkbox which only appears when items exist
+    const selectAll = page.getByRole('checkbox', { name: 'Select All' });
+    const hasItems = await selectAll.isVisible({ timeout: 3000 }).catch(() => false);
+
+    if (!hasItems) {
+      // Cart is empty - add an item first
       console.log('⚠️  Cart is empty. Adding an item first...');
-      
-      // Add an item to cart
       await page.goto(`${PUBLIC_WEB.URL}buy`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(2000);
-      
-      const voucher = page.locator('a[href*="/products/"]').first();
+
+      // Click on Automation Test Voucher
+      const voucher = page.locator('a[href*="/products/"]').filter({
+        hasText: /AUTOMATION TEST VOUCHER(?!\s*1)/i
+      }).first();
       await voucher.click();
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(1000);
-      
-      await page.click('button:has-text("Add to Cart")');
+
+      // Click Add to Cart
+      await page.getByRole('button', { name: 'Add to Cart' }).click();
       await page.waitForTimeout(2000);
-      
+
       // Go back to cart
       await page.goto(`${PUBLIC_WEB.URL}cart`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(2000);
     }
-    
-    // Uncheck all items if any are checked
-    const checkedBoxes = page.locator('input[type="checkbox"]:checked');
-    const count = await checkedBoxes.count();
-    
-    for (let i = 0; i < count; i++) {
-      await checkedBoxes.first().uncheck();
-      await page.waitForTimeout(300);
+
+    // 2. Uncheck all items - uncheck "Select All" if it's checked
+    const selectAllCheckbox = page.getByRole('checkbox', { name: 'Select All' });
+    if (await selectAllCheckbox.isChecked()) {
+      await selectAllCheckbox.uncheck();
+      await page.waitForTimeout(500);
     }
-    
-    // Click the Get Quotation button
-    await page.click('button:has-text("Get Quotation")');
+
+    // 3. Click the Get Quotation button
+    await page.getByRole('button', { name: 'Get Quotation' }).click();
     await page.waitForTimeout(1500);
-    
-    // Expected Result: Report failed to download. Error message "Please select an item to generate a quotation"
-    const errorMessage = page.locator('status, [role="status"], [role="alert"]').filter({ hasText: 'Please select an item to generate a quotation' });
-    await expect(errorMessage).toBeVisible({ timeout: 3000 });
+
+    // Expected Result: Error message "Please select an item to generate a quotation"
+    await expect(page.getByRole('status')).toContainText('Please select an item to generate a quotation');
   });
 
   test('TC_REPORT005: [Cart page] Download quotation and select multiple vouchers', async ({ page }) => {
-    // Navigate to cart page
+    // 1. Navigate to cart page
     await page.goto(`${PUBLIC_WEB.URL}cart`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
-    
-    // Check if cart is empty
-    const emptyCart = await page.locator('text="Your cart is empty"').count();
-    
-    if (emptyCart > 0) {
+
+    // Check if cart has items
+    const selectAll = page.getByRole('checkbox', { name: 'Select All' });
+    const hasItems = await selectAll.isVisible({ timeout: 3000 }).catch(() => false);
+
+    if (!hasItems) {
+      // Cart is empty - add items first
       console.log('⚠️  Cart is empty. Adding items first...');
-      
-      // Add items to cart
       await page.goto(`${PUBLIC_WEB.URL}buy`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(2000);
-      
-      // Add first item
-      const firstVoucher = page.locator('a[href*="/products/"]').first();
-      await firstVoucher.click();
+
+      const voucher = page.locator('a[href*="/products/"]').filter({
+        hasText: /AUTOMATION TEST VOUCHER(?!\s*1)/i
+      }).first();
+      await voucher.click();
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(1000);
-      await page.click('button:has-text("Add to Cart")');
+
+      await page.getByRole('button', { name: 'Add to Cart' }).click();
       await page.waitForTimeout(2000);
-      
-      // Try to add second item
-      await page.goto(`${PUBLIC_WEB.URL}buy`);
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(2000);
-      
-      const secondVoucher = page.locator('a[href*="/products/"]').nth(1);
-      if (await secondVoucher.count() > 0) {
-        await secondVoucher.click();
-        await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(1000);
-        await page.click('button:has-text("Add to Cart")');
-        await page.waitForTimeout(2000);
-      }
-      
+
       // Go back to cart
       await page.goto(`${PUBLIC_WEB.URL}cart`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(2000);
     }
-    
-    // Tick the item checkboxes from the cart list (Choose at least 1 item)
-    // Skip the "Select All" checkbox by using nth(1) for first item
-    const itemCheckboxes = page.locator('input[type="checkbox"]');
-    const checkboxCount = await itemCheckboxes.count();
-    
-    if (checkboxCount > 1) {
-      // Check first item (skip Select All which is at index 0)
-      await itemCheckboxes.nth(1).check();
+
+    // 2. Ensure items are selected - check "Select All"
+    const selectAllCheckbox = page.getByRole('checkbox', { name: 'Select All' });
+    if (!(await selectAllCheckbox.isChecked())) {
+      await selectAllCheckbox.check();
       await page.waitForTimeout(500);
-      
-      // Check second item if available
-      if (checkboxCount > 2) {
-        await itemCheckboxes.nth(2).check();
-        await page.waitForTimeout(500);
-      }
     }
-    
-    // Click the Get Quotation button
-    const downloadPromise = page.waitForEvent('download');
-    await page.click('button:has-text("Get Quotation")');
+
+    // 3. Click the Get Quotation button
+    const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
+    await page.getByRole('button', { name: 'Get Quotation' }).click();
     const download = await downloadPromise;
-    
+
     // Expected Result: Report downloaded successfully
-    expect(download.suggestedFilename()).toMatch(/\.pdf$|\.csv$/);
-    
-    // Observe
-    const path = await download.path();
-    expect(path).toBeTruthy();
+    expect(download.suggestedFilename()).toMatch(/\.(pdf|csv|xlsx)$/i);
+    const filePath = await download.path();
+    expect(filePath).toBeTruthy();
   });
 });

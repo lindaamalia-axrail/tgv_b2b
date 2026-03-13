@@ -1,6 +1,103 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+import * as path from 'path';
 import { PUBLIC_WEB } from '../../utils/test-data';
 import { PublicLoginPage } from '../../pages/public-web/LoginPage';
+
+/**
+ * Helper: Select AUTOMATION TEST VOUCHER from Buy Voucher page
+ * (Reused from 02-buy-vouchers.spec.ts)
+ */
+async function selectAutomationTestVoucher(page: Page) {
+  await page.goto(PUBLIC_WEB.URL);
+  await page.click('text=Buy Voucher');
+  await page.waitForLoadState('networkidle');
+
+  const allVouchers = page.locator('a[href*="/products/"]');
+  const voucherCount = await allVouchers.count();
+
+  let targetVoucher = null;
+  for (let i = 0; i < voucherCount; i++) {
+    const voucher = allVouchers.nth(i);
+    const voucherText = await voucher.textContent();
+    if (voucherText &&
+        voucherText.toUpperCase().includes('AUTOMATION TEST VOUCHER') &&
+        !voucherText.toUpperCase().includes('AUTOMATION TEST VOUCHER 1')) {
+      targetVoucher = voucher;
+      break;
+    }
+  }
+
+  if (targetVoucher) {
+    await targetVoucher.click();
+  } else {
+    await page.locator('a[href*="/products/"]').filter({
+      hasText: /AUTOMATION TEST VOUCHER(?!\s*1)/i
+    }).first().click();
+  }
+  await page.waitForLoadState('networkidle');
+}
+
+/**
+ * Helper: Complete eGHL payment gateway + FPX Bank Simulator flow
+ * (Reused from 02-buy-vouchers.spec.ts)
+ */
+async function completeEGHLPayment(page: Page) {
+  await page.waitForURL(/.*pay\.e-ghl\.com.*|.*mepsfpx\.com.*|.*simulator\.fpx.*|.*paynet\.my.*/i, { timeout: 20000 });
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(3000);
+
+  const currentUrl = page.url();
+  if (currentUrl.includes('pay.e-ghl.com')) {
+    const retailBankingSection = page.locator('.card-title[data-target="#B2C-B2C"], .card-header span.title:has-text("RETAIL INTERNET BANKING")').first();
+    await retailBankingSection.waitFor({ state: 'visible', timeout: 10000 });
+    await retailBankingSection.click();
+    await page.waitForTimeout(2000);
+
+    const sbiBankA = page.locator('#FPX_FPXD_TEST0021, div.all-items:has(img[alt="SBI BANK A"])').first();
+    await sbiBankA.waitFor({ state: 'visible', timeout: 10000 });
+    await sbiBankA.click();
+    await page.waitForTimeout(3000);
+  }
+
+  await page.waitForURL(/.*simulator\.fpx.*|.*paynet\.my.*|.*BuyerBankSim.*/i, { timeout: 20000 });
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(2000);
+
+  await page.locator('input#userId').waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('input#userId').fill('1234');
+  await page.locator('input#password').fill('1234');
+
+  page.once('dialog', async (dialog) => { await dialog.accept(); });
+
+  await page.locator('button[type="submit"]:has-text("Sign in")').first().click();
+  await page.waitForTimeout(5000);
+
+  const okButton = page.locator('button:has-text("OK"), input[value="OK"]').first();
+  if (await okButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await okButton.click();
+    await page.waitForTimeout(2000);
+  }
+
+  await page.locator('button[type="submit"]:has-text("Confirm")').first().waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('button[type="submit"]:has-text("Confirm")').first().click();
+  await page.waitForTimeout(3000);
+
+  const continueButton = page.locator(
+    'button:has-text("Continue with Transaction"), ' +
+    'input[value*="Continue with Transaction" i], ' +
+    'a:has-text("Continue with Transaction"), ' +
+    'button:has-text("Continue"), ' +
+    'input[value*="Continue" i]'
+  ).first();
+  await continueButton.waitFor({ state: 'visible', timeout: 10000 });
+  await continueButton.click();
+
+  await page.waitForURL(/.*corporate-voucher.*/, { timeout: 30000 });
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(3000);
+
+  await expect(page.locator('text=/Order Processing/i').first()).toBeVisible({ timeout: 15000 });
+}
 
 /**
  * Public Web - Send Vouchers Test Suite
@@ -39,24 +136,25 @@ test.describe('Public Web - Send Vouchers', () => {
    * User cannot view voucher codes due to security reasons.
    */
   test('TC_SEND_001: Voucher codes allocated after successful purchase', async ({ page }) => {
-    // Navigate to Buy Voucher page
-    await page.goto(`${PUBLIC_WEB.URL}buy`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
-    
-    // Select first available voucher
-    await page.locator('a[href*="/products/"]').first().click();
-    await page.waitForLoadState('networkidle');
-    
-    // Click Buy Now
+    test.setTimeout(120000); // Extended timeout for payment flow
+
+    // Step 1-2: Navigate to Buy Voucher and select AUTOMATION TEST VOUCHER
+    await selectAutomationTestVoucher(page);
+
+    // Step 3: Click Buy Now
+    await page.locator('button:has-text("Buy Now")').waitFor({ state: 'visible', timeout: 10000 });
     await page.click('button:has-text("Buy Now")');
-    
-    // Verify checkout page
-    await page.waitForURL(/.*checkout.*/);
-    await expect(page.locator('button:has-text("Proceed to Payment")')).toBeVisible();
-    
-    // Note: Actual payment completion requires eGHL gateway integration
-    // This test verifies the flow up to payment gateway
+
+    // Step 4: Click Proceed to Payment
+    await page.waitForURL(/.*checkout.*/, { timeout: 30000 });
+    await page.click('button:has-text("Proceed to Payment")');
+
+    // Step 5: Complete payment in eGHL gateway + FPX Bank Simulator
+    await completeEGHLPayment(page);
+
+    // Step 6: Verify order confirmation page
+    await expect(page.locator('text=/Order No/i').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=/Total Payment/i').first()).toBeVisible();
   });
 
   /**
@@ -92,7 +190,7 @@ test.describe('Public Web - Send Vouchers', () => {
     
     // Verify Send Voucher page elements
     await expect(page.getByRole('button', { name: '+ Select Voucher' })).toBeVisible();
-    await expect(page.locator('text=Total Number of Recipient')).toBeVisible();
+    await expect(page.getByText('Total Number of Recipient', { exact: true })).toBeVisible();
     
     // Test Option 3: Access from My Order
     await page.goto(`${PUBLIC_WEB.URL}my-orders`);
@@ -157,43 +255,25 @@ test.describe('Public Web - Send Vouchers', () => {
     await page.getByRole('button', { name: '+ Select Voucher' }).click();
     await page.waitForTimeout(1500);
     
-    // Step 3: Verify modal opened
-    await expect(page.locator('heading:has-text("Select Voucher")')).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Search voucher' })).toBeVisible();
+    // Step 3: Verify modal opened with voucher list
+    await expect(page.locator('text=Select Voucher').first()).toBeVisible();
     
-    // Check if vouchers are available
-    const noItemsMessage = page.locator('text="No inventory items found"');
-    const hasNoVouchers = await noItemsMessage.isVisible({ timeout: 2000 }).catch(() => false);
+    // Select first available voucher checkbox
+    const checkboxes = page.locator('input[type="checkbox"]');
+    const checkboxCount = await checkboxes.count();
+    expect(checkboxCount).toBeGreaterThan(0);
     
-    if (!hasNoVouchers) {
-      // Vouchers are available - proceed with selection
-      
-      // Option: Search for specific voucher
-      await page.getByRole('textbox', { name: 'Search voucher' }).fill('AUTOMATION TEST');
-      await page.waitForTimeout(1000);
-      
-      // Select first available voucher checkbox
-      const checkboxes = page.locator('input[type="checkbox"]');
-      const checkboxCount = await checkboxes.count();
-      
-      if (checkboxCount > 0) {
-        await checkboxes.first().click();
-        await page.waitForTimeout(500);
-        
-        // Step 4: Click Select button in modal
-        await page.getByRole('button', { name: 'Select' }).click();
-        await page.waitForTimeout(1500);
-        
-        // Verify voucher was selected
-        await expect(page.getByRole('button', { name: '+ Select Voucher' })).toBeVisible();
-      }
-    } else {
-      console.log('No vouchers available in inventory - skipping selection');
-    }
+    await checkboxes.first().click();
+    await page.waitForTimeout(500);
     
-    // Verify Select button is visible
-    const selectButton = page.getByRole('button', { name: 'Select' });
-    await expect(selectButton).toBeVisible();
+    // Step 4: Click Select button in modal
+    await page.getByRole('button', { name: 'Select', exact: true }).click();
+    await page.waitForTimeout(1500);
+    
+    // Verify voucher was selected - voucher info should be displayed
+    await expect(page.getByRole('button', { name: '+ Select Voucher' })).toBeVisible();
+    const selectedVoucherInfo = page.locator('text=/AUTOMATION TEST|RM\\s*\\d+/i').first();
+    await expect(selectedVoucherInfo).toBeVisible({ timeout: 5000 });
   });
 
   /**
@@ -219,8 +299,8 @@ test.describe('Public Web - Send Vouchers', () => {
     const nextButton = page.locator('button:has-text("Next")');
     await expect(nextButton).toBeDisabled();
     
-    // Fill Total Number of Recipient
-    const totalRecipientsInput = page.locator('input[type="number"]').first();
+    // Fill Total Number of Recipient (textbox with placeholder "0")
+    const totalRecipientsInput = page.getByRole('textbox', { name: '0' });
     await totalRecipientsInput.fill('1');
     await page.waitForTimeout(500);
     
@@ -2452,5 +2532,134 @@ test.describe('Public Web - Send Vouchers', () => {
     
     // This test documents the expected behavior of REGISTER NOW button
     await expect(page.locator('text=/send voucher/i').first()).toBeVisible();
+  });
+
+  /**
+   * TC_SEND_E2E: Complete Send Voucher End-to-End Flow
+   * Type: Positive (E2E)
+   * 
+   * Full flow:
+   * 1. Click +Send Voucher button
+   * 2. Enter total number of recipient
+   * 3. Click +Select Voucher
+   * 4. Click checkbox on one of the voucher
+   * 5. Click Select button
+   * 6. Assert the selected voucher
+   * 7. Click Next button
+   * 8. Download CSV
+   * 9. Click Next button (to Step 3: Upload and Send)
+   * 10. Upload the CSV file
+   * 11. Click Send Vouchers button
+   * 12. Click Send Voucher button
+   * 13. Click Confirm Send button
+   * 14. Verify the Success message
+   */
+  test('TC_SEND_E2E: Complete Send Voucher End-to-End Flow', async ({ page }) => {
+    // Navigate to Send Voucher list page
+    await page.goto(`${PUBLIC_WEB.URL}send-voucher`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+
+    // Step 1: Click +Send Voucher button (navigates to create page)
+    const sendVoucherLink = page.getByRole('link', { name: 'Send Voucher', exact: true });
+    await sendVoucherLink.click();
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+
+    // If we're not on the create page, navigate directly
+    if (!page.url().includes('send-voucher/create')) {
+      await page.goto(`${PUBLIC_WEB.URL}send-voucher/create`);
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(2000);
+    }
+
+    // Verify Step 1 page loaded
+    await expect(page.getByText('Total Number of Recipient', { exact: true })).toBeVisible({ timeout: 10000 });
+
+    // Step 2: Enter total number of recipient
+    const totalRecipientsInput = page.getByRole('textbox', { name: '0' });
+    await totalRecipientsInput.fill('1');
+    await page.waitForTimeout(500);
+
+    // Step 3: Click +Select Voucher button
+    await page.getByRole('button', { name: '+ Select Voucher' }).click();
+    await page.waitForTimeout(2000);
+
+    // Verify Select Voucher modal opened
+    await expect(page.locator('text=Select Voucher').first()).toBeVisible({ timeout: 5000 });
+
+    // Step 4: Click checkbox on one of the voucher
+    const checkboxes = page.locator('input[type="checkbox"]');
+    const checkboxCount = await checkboxes.count();
+    expect(checkboxCount).toBeGreaterThan(0);
+    await checkboxes.first().click();
+    await page.waitForTimeout(500);
+
+    // Step 5: Click Select button in modal
+    await page.getByRole('button', { name: 'Select', exact: true }).click();
+    await page.waitForTimeout(2000);
+
+    // Step 6: Assert the selected voucher is displayed
+    // After selecting, the voucher should appear in the form (no longer showing empty state)
+    // The "+ Select Voucher" button should still be visible for adding more
+    await expect(page.getByRole('button', { name: '+ Select Voucher' })).toBeVisible();
+    // Verify a voucher card/item is now shown (selected voucher info)
+    const selectedVoucherInfo = page.locator('text=/AUTOMATION TEST|RM\\s*\\d+/i').first();
+    await expect(selectedVoucherInfo).toBeVisible({ timeout: 5000 });
+
+    // Step 7: Click Next button
+    const nextButton = page.locator('button:has-text("Next")');
+    await expect(nextButton).toBeEnabled({ timeout: 5000 });
+    await nextButton.click();
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
+
+    // Step 8: Download CSV template
+    // We're now on Step 2: Download the Recipient Template
+    const downloadLink = page.locator('a:has-text("Download"), button:has-text("Download")').first();
+    if (await downloadLink.isVisible({ timeout: 5000 }).catch(() => false)) {
+      const [download] = await Promise.all([
+        page.waitForEvent('download', { timeout: 10000 }),
+        downloadLink.click()
+      ]);
+      // Verify CSV was downloaded
+      const filename = download.suggestedFilename();
+      expect(filename).toContain('.csv');
+      console.log(`Downloaded CSV template: ${filename}`);
+    }
+
+    // Step 9: Click Next button (to Step 3: Upload and Send)
+    const nextButton2 = page.locator('button:has-text("Next")');
+    if (await nextButton2.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await nextButton2.click();
+      await page.waitForTimeout(2000);
+    }
+
+    // Step 10: Upload the CSV file
+    const fileInput = page.locator('input[type="file"]');
+    await expect(fileInput).toBeAttached({ timeout: 10000 });
+
+    // Use the test CSV file
+    const csvPath = path.resolve(__dirname, '../../test-data/voucher_recipients_template.csv');
+    await fileInput.setInputFiles(csvPath);
+    await page.waitForTimeout(3000);
+
+    // Step 11: Click Send Voucher button (opens confirmation dialog)
+    const sendVouchersButton = page.getByRole('button', { name: 'Send Voucher', exact: true });
+    await sendVouchersButton.waitFor({ state: 'visible', timeout: 10000 });
+    await sendVouchersButton.click();
+    await page.waitForTimeout(2000);
+
+    // Step 12-13: The confirmation dialog appears with "Cancel" and "Confirm Send" buttons
+    // Click "Confirm Send" button in the dialog
+    const confirmSendButton = page.getByRole('button', { name: 'Confirm Send' });
+    await confirmSendButton.waitFor({ state: 'visible', timeout: 10000 });
+    await confirmSendButton.click();
+    await page.waitForTimeout(5000);
+
+    // Step 14: Verify the Success message
+    const successMessage = page.locator('text=/success|successfully|voucher.*sent|sent.*successfully/i').first();
+    await expect(successMessage).toBeVisible({ timeout: 15000 });
+    console.log('Send Voucher E2E flow completed successfully');
   });
 });
